@@ -93,6 +93,9 @@ body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--te
 .form-group label{display:block;color:var(--text2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
 .form-group input{width:100%;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:var(--font);outline:none;transition:all .2s;-webkit-appearance:none;}
 .form-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.2);}
+.remember-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.remember-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;}
+.remember-row label{font-size:12px;color:var(--text2);cursor:pointer;user-select:none;}
 .btn-login{width:100%;padding:16px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;font-family:var(--font);-webkit-appearance:none;touch-action:manipulation;}
 .btn-login:active{transform:scale(.97);}
 .login-err{color:var(--accent);font-size:13px;text-align:center;margin-top:10px;min-height:18px;}
@@ -347,6 +350,12 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .source-embed{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;height:280px;}
 .source-embed iframe{width:100%;height:100%;border:none;}
 
+/* Active sessions */
+.session-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.session-row:last-child{border-bottom:none;}
+.session-user{font-weight:700;font-size:13px;color:var(--text);}
+.session-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+
 /* ================================================================
    RESPONSIVE
 ================================================================ */
@@ -451,6 +460,10 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <div class="form-group">
       <label>ລະຫັດຜ່ານ</label>
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="remember-row">
+      <input type="checkbox" id="rememberMe" checked>
+      <label for="rememberMe">ຈື່ການເຂົ້າສູ່ລະບົບໃນເຄື່ອງນີ້</label>
     </div>
     <button class="btn-login" onclick="doLogin()">
       <i class="fas fa-sign-in-alt" style="margin-right:8px"></i>ເຂົ້າລະບົບ
@@ -644,6 +657,12 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
           <option value="viewer">Viewer (ເບິ່ງຢ່າງດຽວ)</option>
         </select>
       </div>
+      <div class="form-group-modal"><label>ສະຖານະຜູ້ນຳໃຊ້</label>
+        <select id="adminActive">
+          <option value="true">ເປີດໃຊ້ງານ (Active)</option>
+          <option value="false">ປິດການໃຊ້ງານ (Inactive)</option>
+        </select>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="saveAdmin()"><i class="fas fa-save"></i> ບັນທຶກ</button>
@@ -683,14 +702,11 @@ const DATA_SHEET   = '1pk6ahl0NnuE-mbAjlf-e65GM_OFKlXBZLjRcNLPDxWI';
 const SOURCE_SHEET = '1mp8Flf23UUJd-AJ5MaSv-iLo6JwqcFqXVKfRpWcc8gM';
 const MONTH_NAMES  = ['','ມັງກອນ','ກຸມພາ','ມີນາ','ເມສາ','ພຶດສະພາ','ມິຖຸນາ','ກໍລະກົດ','ສິງຫາ','ກັນຍາ','ຕຸລາ','ພະຈິກ','ທັນວາ'];
 const SLIP_FOLDER_ID = '13OdTo9obNvLhIU7MF9ZqnrXB_4TbnnfP'; // ✅ Google Drive folder ສຳລັບເກັບ Slip
+const AUTH_STORAGE_KEY = 'emo_auth'; // ✅ ກຸນແຈເກັບຂໍ້ມູນ login ໄວ້ໃນເຄື່ອງ (localStorage)
 
 // ============================================================
 // 🌐 API BRIDGE — fetch ผ่าน POST ไปยัง GAS
 // ============================================================
-async function gasCall(fn, ...args) {
-  return gasCallEx(fn, args, 8000);
-}
-
 async function gasCall(fn, ...args) {
   return gasCallEx(fn, args, 8000);
 }
@@ -771,7 +787,8 @@ const STATE = {
   selectedYear:new Date().getFullYear(), selectedMonth:null,
   currentType:'income', lightMode:false, charts:{},
   externalSources:[], admins:[], activeSessions:[],
-  lastTxCount:0, realtimeInterval:null,
+  lastTxCount:0, realtimeInterval:null, sessionPollInterval:null,
+  knownSessionTokens:new Set(), sessionsInitialized:false,
   displayCurrency:'LAK',
   dashDateFrom:'', dashDateTo:'', selectedDashMonth:''
 };
@@ -871,6 +888,7 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
+  const remember = document.getElementById('rememberMe').checked;
   const err = document.getElementById('loginErr');
   err.textContent = '';
   if(!u||!p){ err.textContent='ກະລຸນາໃສ່ຊື່ ແລະ ລະຫັດ'; return; }
@@ -878,23 +896,46 @@ async function doLogin() {
     setSyncStatus('loading','ກຳລັງເຂົ້າ...');
     const r = await gasCall('login',u,p);
     if(r.success) {
-      STATE.loggedIn=true; STATE.token=r.token||''; STATE.currentUser=u; STATE.currentRole=r.role||'admin';
-      document.getElementById('sidebarUser').textContent=r.displayName||u;
-      document.getElementById('sidebarRole').textContent=r.role==='admin'?'ຜູ້ດູແລລະບົບ':'Viewer';
-      document.getElementById('sidebarAvatar').textContent=(r.displayName||u)[0].toUpperCase();
-      document.getElementById('loginScreen').style.display='none';
-      document.getElementById('app').style.display='block';
-
+      applyLoginSession({ token:r.token||'', username:u, role:r.role||'admin', displayName:r.displayName||u }, remember);
       await initApp();
     } else {
       err.textContent=r.error||'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ'; setSyncStatus('error','');
     }
   } catch(e) { err.textContent='ຜິດພາດ: '+e; setSyncStatus('error',''); }
 }
+
+// ✅ ຕັ້ງຄ່າ session ຫລັງຈາກ login ສຳເລັດ (ໃຊ້ທັງຕອນ login ປົກກະຕິ ແລະ ຕອນ auto-login)
+function applyLoginSession(session, remember) {
+  STATE.loggedIn=true; STATE.token=session.token; STATE.currentUser=session.username; STATE.currentRole=session.role;
+  document.getElementById('sidebarUser').textContent=session.displayName||session.username;
+  document.getElementById('sidebarRole').textContent=session.role==='admin'?'ຜູ້ດູແລລະບົບ':'Viewer';
+  document.getElementById('sidebarAvatar').textContent=(session.displayName||session.username)[0].toUpperCase();
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if(remember!==false) {
+    try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session)); }catch(e){}
+  }
+}
+
+// ✅ ຖ້າມີຂໍ້ມູນ login ຖືກເກັບໄວ້ໃນເຄື່ອງນີ້ (localStorage) ໃຫ້ເຂົ້າລະບົບໃຫ້ອັດຕະໂນມັດ ບໍ່ຕ້ອງພິມລະຫັດຄືນ
+function tryAutoLogin() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)||'null');
+    if(saved && saved.token && saved.username) {
+      applyLoginSession(saved, true);
+      initApp();
+      return true;
+    }
+  } catch(e){}
+  return false;
+}
+
 async function doLogout() {
   if(STATE.realtimeInterval) clearInterval(STATE.realtimeInterval);
+  if(STATE.sessionPollInterval) clearInterval(STATE.sessionPollInterval);
   await gasCall('logout',STATE.token).catch(()=>{});
   STATE.loggedIn=false;
+  try{ localStorage.removeItem(AUTH_STORAGE_KEY); }catch(e){}
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('app').style.display='none';
 }
@@ -910,6 +951,9 @@ async function initApp() {
   navigate('dashboard');
   setSyncStatus('loading','ກຳລັງໂຫລດ...');
 
+  // ✅ ຂໍອະນຸຍາດແຈ້ງເຕືອນ Browser (ສຳລັບແຈ້ງເຕືອນເມື່ອມີຄົນ login)
+  try { if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); } catch(e){}
+
   try {
     await gasCall('initializeSheets');
     const [catRes,setRes,yearRes] = await Promise.all([gasCall('getCategories'),gasCall('getSettings'),gasCall('getAvailableYears')]);
@@ -922,10 +966,12 @@ async function initApp() {
     refreshCurrentPage();
     setSyncStatus('ok','ເຊື່ອມຕໍ່');
     startRealtimeSync();
+    startSessionWatcher();
   } catch(e) {
     setSyncStatus('error','ຜິດພາດ');
     await loadAllData();
     refreshCurrentPage();
+    startSessionWatcher();
   }
 }
 
@@ -962,6 +1008,73 @@ function startRealtimeSync() {
       }
     } catch(_){}
   }, 15000);
+}
+
+// ============================================================
+// 🔔 SESSION WATCHER — ກວດຫາຜູ້ Login ໃໝ່ ແລ້ວແຈ້ງເຕືອນ + ສຽງ
+// ============================================================
+function startSessionWatcher() {
+  if(STATE.sessionPollInterval) clearInterval(STATE.sessionPollInterval);
+  pollActiveSessions(); // ດຶງຄັ້ງທຳອິດ ເພື່ອກຳນົດຄ່າເລີ່ມຕົ້ນ (ບໍ່ແຈ້ງເຕືອນ)
+  STATE.sessionPollInterval = setInterval(pollActiveSessions, 20000);
+}
+
+async function pollActiveSessions() {
+  try {
+    const res = await gasCall('getActiveSessions');
+    if(!res.success) return;
+    const sessions = res.data||[];
+    STATE.activeSessions = sessions;
+    const newTokens = new Set(sessions.map(s=>s.token));
+
+    if(STATE.sessionsInitialized) {
+      sessions.forEach(s=>{
+        // ✅ ມີ token ໃໝ່ທີ່ຍັງບໍ່ເຄີຍເຫັນ ແລະ ບໍ່ແມ່ນຕົວເຮົາເອງ = ມີຄົນອື່ນ login ເຂົ້າມາ
+        if(!STATE.knownSessionTokens.has(s.token) && s.token!==STATE.token) {
+          playLoginSound();
+          showToast(`🔔 "${s.username}" ເຂົ້າສູ່ລະບົບ`,'info');
+          try {
+            if('Notification' in window && Notification.permission==='granted') {
+              new Notification('ມີຜູ້ເຂົ້າສູ່ລະບົບ EMO Finance', { body: s.username+' ເຂົ້າສູ່ລະບົບແລ້ວ' });
+            }
+          } catch(e){}
+        }
+      });
+    }
+    STATE.knownSessionTokens = newTokens;
+    STATE.sessionsInitialized = true;
+
+    // ✅ ຖ້າກຳລັງເປີດໜ້າຕັ້ງຄ່າຢູ່ ໃຫ້ອັບເດດລາຍຊື່ຜູ້ໃຊ້ງານແບບ realtime
+    const box = document.getElementById('activeSessionsBox');
+    if(box) box.innerHTML = renderActiveSessionsHtml();
+  } catch(e){}
+}
+
+// ✅ ສ້າງສຽງແຈ້ງເຕືອນສັ້ນໆດ້ວຍ Web Audio API (ບໍ່ຕ້ອງໃຊ້ໄຟລ໌ສຽງພາຍນອກ)
+function playLoginSound() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime+0.15);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.45);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime+0.45);
+  } catch(e){}
+}
+
+function renderActiveSessionsHtml() {
+  const sessions = STATE.activeSessions||[];
+  if(!sessions.length) return `<div style="color:var(--text3);font-size:12px;padding:6px 0;">ບໍ່ມີຜູ້ໃຊ້ງານຢູ່ໃນຂະນະນີ້</div>`;
+  return sessions.map(s=>`
+    <div class="session-row">
+      <div>
+        <div class="session-user">${s.username}${s.token===STATE.token?' <span style="color:var(--primary-light);font-weight:600;">(ທ່ານ)</span>':''}</div>
+        <div class="session-meta">ເຂົ້າສູ່ລະບົບ: ${formatDateTime(s.loginAt)} · ໃຊ້ງານລ່າສຸດ: ${formatDateTime(s.lastActive)}</div>
+      </div>
+      <span class="rt-badge"><span class="rt-dot"></span>Online</span>
+    </div>`).join('');
 }
 
 // ============================================================
@@ -1467,7 +1580,7 @@ async function renderSettings(el) {
   const adminRows = STATE.admins.map(a=>`
     <tr><td><strong>${a.username}</strong></td><td>${a.displayName||'-'}</td>
       <td><span class="badge ${a.role==='admin'?'badge-income':'badge-expense'}">${a.role}</span></td>
-      <td>${String(a.active).toLowerCase()==='true'?'<span style="color:var(--income)">●</span>':'<span style="color:var(--text3)">●</span>'}</td>
+      <td>${String(a.active).toLowerCase()==='true'?'<span style="color:var(--income)">● Active</span>':'<span style="color:var(--text3)">● Inactive</span>'}</td>
       <td><div class="action-btns">
         <button class="btn btn-sm btn-outline" onclick="openEditAdmin('${a.username}')"><i class="fas fa-edit"></i></button>
         ${a.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="doDeleteAdmin('${a.username}')"><i class="fas fa-trash"></i></button>`:''}
@@ -1507,13 +1620,20 @@ async function renderSettings(el) {
     </div>
     <div class="settings-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div class="settings-section-title" style="margin:0;"><i class="fas fa-users-cog"></i> ຈັດການຜູ້ໃຊ້</div>
+        <div class="settings-section-title" style="margin:0;"><i class="fas fa-users-cog"></i> ຈັດການຜູ້ໃຊ້ (ຕັ້ງແອັດມິນ)</div>
         <button class="btn btn-primary btn-sm" onclick="openAddAdmin()"><i class="fas fa-plus"></i></button>
       </div>
       <div class="table-scroll"><table>
         <thead><tr><th>Username</th><th>ຊື່</th><th>ສິດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
         <tbody>${adminRows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);">ບໍ່ມີ</td></tr>'}</tbody>
       </table></div>
+    </div>
+    <div class="settings-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="settings-section-title" style="margin:0;"><i class="fas fa-user-clock"></i> ຜູ້ທີ່ກຳລັງໃຊ້ງານຢູ່ (${STATE.activeSessions.length})</div>
+        <button class="icon-btn btn-sm" onclick="pollActiveSessions()"><i class="fas fa-sync-alt"></i></button>
+      </div>
+      <div id="activeSessionsBox">${renderActiveSessionsHtml()}</div>
     </div>
   </div>`;
 }
@@ -1580,15 +1700,15 @@ function toggleTheme() {
   STATE.settings.darkMode = darkModeVal;
 }
 
-function openAddAdmin() { STATE.editAdmin=null; document.getElementById('adminModalTitle').textContent='ເພີ່ມຜູ້ໃຊ້'; ['adminUsername','adminPassword','adminDisplayName'].forEach(id=>document.getElementById(id).value=''); document.getElementById('adminModal').classList.add('open'); }
-function openEditAdmin(u) { STATE.editAdmin=u; document.getElementById('adminModalTitle').textContent='ແກ້ໄຂ: '+u; const a=STATE.admins.find(x=>x.username===u); document.getElementById('adminUsername').value=u; document.getElementById('adminDisplayName').value=a?.displayName||''; document.getElementById('adminPassword').value=''; document.getElementById('adminRole').value=a?.role||'admin'; document.getElementById('adminModal').classList.add('open'); }
+function openAddAdmin() { STATE.editAdmin=null; document.getElementById('adminModalTitle').textContent='ເພີ່ມຜູ້ໃຊ້'; ['adminUsername','adminPassword','adminDisplayName'].forEach(id=>document.getElementById(id).value=''); document.getElementById('adminActive').value='true'; document.getElementById('adminRole').value='admin'; document.getElementById('adminModal').classList.add('open'); }
+function openEditAdmin(u) { STATE.editAdmin=u; document.getElementById('adminModalTitle').textContent='ແກ້ໄຂ: '+u; const a=STATE.admins.find(x=>x.username===u); document.getElementById('adminUsername').value=u; document.getElementById('adminDisplayName').value=a?.displayName||''; document.getElementById('adminPassword').value=''; document.getElementById('adminRole').value=a?.role||'admin'; document.getElementById('adminActive').value=String(a?.active).toLowerCase()==='false'?'false':'true'; document.getElementById('adminModal').classList.add('open'); }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('open'); }
 async function saveAdmin() {
-  const username=document.getElementById('adminUsername').value.trim(), password=document.getElementById('adminPassword').value, displayName=document.getElementById('adminDisplayName').value.trim(), role=document.getElementById('adminRole').value;
+  const username=document.getElementById('adminUsername').value.trim(), password=document.getElementById('adminPassword').value, displayName=document.getElementById('adminDisplayName').value.trim(), role=document.getElementById('adminRole').value, active=document.getElementById('adminActive').value;
   if(!username){showToast('ໃສ່ username','error');return;}
   let r;
-  if(STATE.editAdmin) r=await gasCall('updateAdmin',STATE.editAdmin,{password:password||undefined,displayName,role});
-  else { if(!password){showToast('ໃສ່ລະຫັດຜ່ານ','error');return;} r=await gasCall('addAdmin',{username,password,displayName,role}); }
+  if(STATE.editAdmin) r=await gasCall('updateAdmin',STATE.editAdmin,{password:password||undefined,displayName,role,active});
+  else { if(!password){showToast('ໃສ່ລະຫັດຜ່ານ','error');return;} r=await gasCall('addAdmin',{username,password,displayName,role,active}); }
   if(r.success){showToast('ສຳເລັດ','success');closeAdminModal();renderSettings(document.getElementById('mainContent'));}
   else showToast('ຜິດພາດ: '+r.error,'error');
 }
@@ -1698,6 +1818,12 @@ function formatDate(d) {
   if(isNaN(dt)) return String(d);
   return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`;
 }
+function formatDateTime(d) {
+  if(!d) return '-';
+  const dt = d instanceof Date ? d : new Date(d);
+  if(isNaN(dt)) return String(d);
+  return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()} ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+}
 
 // ============================================================
 // RESIZE + GESTURES
@@ -1714,9 +1840,11 @@ document.addEventListener('touchend',e=>{
 },{passive:true});
 
 // ============================================================
-// PRE-LOAD SETTINGS ON LOGIN SCREEN
+// PRE-LOAD SETTINGS ON LOGIN SCREEN / AUTO-LOGIN
 // ============================================================
-(async function preloadSettings(){
+(async function boot(){
+  // ✅ ຖ້າມີ session ຖືກຈື່ໄວ້ໃນເຄື່ອງ ໃຫ້ເຂົ້າລະບົບອັດຕະໂນມັດ ຂ້າມໜ້າ login ໄປເລີຍ
+  if (tryAutoLogin()) return;
   try {
     const r = await gasCall('getSettings');
     if(r.success && r.settings) {
