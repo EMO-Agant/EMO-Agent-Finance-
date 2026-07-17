@@ -454,10 +454,6 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <div class="app-sub" id="loginAppSub">ລະບົບບໍລິຫານລາຍຮັບ-ລາຍຈ່າຍ</div>
     </div>
     <div class="form-group">
-      <label>ຊື່ຜູ້ໃຊ້</label>
-      <input type="text" id="loginUser" placeholder="admin" autocomplete="username">
-    </div>
-    <div class="form-group">
       <label>ລະຫັດຜ່ານ</label>
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
     </div>
@@ -942,20 +938,19 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 // AUTH
 // ============================================================
 async function doLogin() {
-  const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   const remember = document.getElementById('rememberMe').checked;
   const err = document.getElementById('loginErr');
   err.textContent = '';
-  if(!u||!p){ err.textContent='ກະລຸນາໃສ່ຊື່ ແລະ ລະຫັດ'; return; }
+  if(!p){ err.textContent='ກະລຸນາໃສ່ລະຫັດຜ່ານ'; return; }
   try {
     setSyncStatus('loading','ກຳລັງເຂົ້າ...');
-    const r = await gasCall('login',u,p);
+    const r = await gasCall('login', p);   // ✅ ສົ່ງແຕ່ລະຫັດຜ່ານ
     if(r.success) {
-      applyLoginSession({ token:r.token||'', username:u, role:r.role||'admin', displayName:r.displayName||u }, remember);
+      applyLoginSession({ token:r.token||'', username:r.username, role:r.role||'admin', displayName:r.displayName||r.username }, remember);
       await initApp();
     } else {
-      err.textContent=r.error||'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ'; setSyncStatus('error','');
+      err.textContent=r.error||'ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ'; setSyncStatus('error','');
     }
   } catch(e) { err.textContent='ຜິດພາດ: '+e; setSyncStatus('error',''); }
 }
@@ -996,7 +991,6 @@ async function doLogout() {
   document.getElementById('app').style.display='none';
 }
 document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 // ============================================================
 // INIT
