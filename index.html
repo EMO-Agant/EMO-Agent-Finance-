@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="lo" data-light="true">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>EMO Finance System</title>
+
+<meta name="apple-mobile-web-app-title" content="EMO Finance">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="ລະບົບບໍລິຫານລາຍຮັບ-ລາຍຈ່າຍ EMO Agency">
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-128.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ================================================================
+   ROOT VARIABLES & RESET
+================================================================ */
+:root {
+  --primary:#6C63FF; --primary-dark:#5A52D5; --primary-light:#8B85FF;
+  --accent:#FF6584; --accent2:#43E97B; --accent3:#FA8231;
+  --bg:#0F0F1A; --bg2:#16162A; --bg3:#1E1E35; --bg4:#252545;
+  --card:#1A1A30; --card2:#202040;
+  --border:rgba(108,99,255,.2);
+  --text:#E8E8F5; --text2:#A0A0C0; --text3:#6868A0;
+  --income:#43E97B; --expense:#FF6584; --profit:#38BDF8;
+  --shadow:0 8px 32px rgba(0,0,0,.4);
+  --radius:16px; --radius-sm:10px; --radius-xs:8px;
+  --font:'Inter','Noto Sans Lao',sans-serif;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+  --topbar-h:72px;
+  --bottomnav-h:58px;
+  --sidebar-w:260px;
+}
+[data-light=true]{
+  --bg:#F0F0FF;--bg2:#E8E8FF;--bg3:#DCDCFF;--bg4:#D0D0F5;
+  --card:#FFF;--card2:#F8F8FF;--border:rgba(108,99,255,.25);
+  --text:#1A1A35;--text2:#4A4A70;--text3:#8080A0;
+  --shadow:0 4px 24px rgba(108,99,255,.12);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{min-height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased;max-width:100vw;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--primary);border-radius:3px;}
+
+/* ================================================================
+   LOGIN
+================================================================ */
+#loginScreen{
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 30% 50%,rgba(108,99,255,.2) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 20%,rgba(255,101,132,.15) 0%,transparent 50%),var(--bg);
+  padding:16px;
+  padding-top:max(16px,var(--safe-top));
+  padding-bottom:max(16px,var(--safe-bottom));
+}
+.login-card{
+  background:var(--card);border:1px solid var(--border);border-radius:24px;
+  padding:32px 24px;width:100%;max-width:400px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);animation:slideUp .5s ease;
+}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo-img-wrap{
+  width:72px;height:72px;border-radius:18px;border:2px solid var(--primary);overflow:hidden;
+  margin:0 auto 12px;cursor:pointer;position:relative;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;
+}
+.login-logo-img-wrap img{width:100%;height:100%;object-fit:cover;display:none;}
+.edit-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;font-size:16px;color:#fff;}
+.login-logo-img-wrap:hover .edit-overlay,.login-logo-img-wrap:active .edit-overlay{opacity:1;}
+.app-name{font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.app-sub{color:var(--text2);font-size:13px;margin-top:4px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;color:var(--text2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.form-group input{width:100%;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:var(--font);outline:none;transition:all .2s;-webkit-appearance:none;}
+.form-group input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.2);}
+.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;font-family:var(--font);-webkit-appearance:none;touch-action:manipulation;}
+.btn-login:active{transform:scale(.97);}
+.login-err{color:var(--accent);font-size:13px;text-align:center;margin-top:10px;min-height:18px;}
+.api-note{
+  margin-top:16px;padding:10px 12px;background:rgba(108,99,255,.1);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:11px;color:var(--text3);text-align:center;
+}
+
+/* ================================================================
+   APP LAYOUT
+================================================================ */
+#app{display:none;min-height:100vh;min-height:100dvh;}
+.layout{display:flex;min-height:100vh;min-height:100dvh;align-items:stretch;}
+
+/* SIDEBAR */
+.sidebar{
+  width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;
+}
+.sidebar-header{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);height:var(--topbar-h);padding-top:max(0px,var(--safe-top));}
+.sidebar-logo{width:38px;height:38px;border-radius:10px;border:2px solid var(--primary);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;overflow:hidden;}
+.sidebar-logo img{width:100%;height:100%;object-fit:cover;border-radius:8px;}
+.sidebar-title{font-weight:800;font-size:14px;color:var(--text);line-height:1.2;}
+.sidebar-title span{display:block;font-size:10px;color:var(--text2);font-weight:400;margin-top:2px;}
+.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto;}
+.nav-section{margin-bottom:4px;}
+.nav-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:8px 10px 4px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;transition:all .2s;font-size:15px;font-weight:500;font-family:var(--font);border:none;background:none;width:100%;text-align:left;touch-action:manipulation;min-height:48px;}
+.nav-item:hover,.nav-item:active{background:rgba(108,99,255,.1);color:var(--text);}
+.nav-item.active{background:linear-gradient(135deg,rgba(108,99,255,.25),rgba(108,99,255,.1));color:var(--primary-light);}
+.nav-icon{width:20px;font-size:16px;text-align:center;flex-shrink:0;}
+.sidebar-footer{padding:10px;border-top:1px solid var(--border);padding-bottom:max(10px,var(--safe-bottom));}
+.user-info{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg3);}
+.user-avatar{width:32px;height:32px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;}
+.user-name{font-size:12px;font-weight:600;color:var(--text);}
+.user-role{font-size:10px;color:var(--text3);}
+
+/* MAIN AREA */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;width:calc(100% - var(--sidebar-w));max-width:calc(100vw - var(--sidebar-w));}
+
+/* TOPBAR */
+.topbar{
+  background:var(--card);border-bottom:1px solid var(--border);
+  height:var(--topbar-h);display:flex;align-items:center;
+  position:sticky;top:0;z-index:50;padding:0 10px;gap:6px;width:100%;isolation:isolate;
+}
+.topbar-left{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.topbar-title{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.topbar-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;}
+.currency-toggle{display:flex;gap:1px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px;flex-shrink:0;overflow:visible;}
+.cur-btn{padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .2s;font-family:var(--font);touch-action:manipulation;min-height:30px;min-width:32px;letter-spacing:.2px;outline:none;}
+.cur-btn:focus{outline:none;box-shadow:none;}
+.cur-btn.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 2px 8px rgba(108,99,255,.4);}
+.topbar-sync{display:none;align-items:center;gap:5px;font-size:11px;color:var(--text3);overflow:hidden;max-width:120px;}
+
+/* ICON BTN */
+.icon-btn{min-width:36px;min-height:36px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px;touch-action:manipulation;flex-shrink:0;-webkit-appearance:none;outline:none;}
+.icon-btn:focus{outline:none;box-shadow:none;}
+.icon-btn:active{background:var(--bg4);color:var(--text);}
+
+/* CONTENT */
+.content{padding:12px;flex:1;overflow-x:hidden;width:100%;}
+
+/* ================================================================
+   BOTTOM NAV
+================================================================ */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);height:calc(var(--bottomnav-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);z-index:100;flex-direction:row;align-items:stretch;width:100%;}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;cursor:pointer;border:none;background:none;color:var(--text3);font-family:var(--font);transition:all .2s;touch-action:manipulation;outline:none;}
+.bnav-item:focus{outline:none;}
+.bnav-item.active{color:var(--primary-light);}
+.bnav-item.active .bnav-icon{color:var(--primary);}
+.bnav-icon{font-size:18px;transition:transform .2s;}
+.bnav-item.active .bnav-icon{transform:scale(1.12);}
+.bnav-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+
+/* SIDEBAR OVERLAY */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:190;backdrop-filter:blur(2px);}
+.sidebar-overlay.show{display:block;}
+
+/* ================================================================
+   STAT CARDS
+================================================================ */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;transition:transform .2s;}
+.stat-card:active{transform:scale(.98);}
+.stat-card::before{content:'';position:absolute;top:-20px;right:-20px;width:70px;height:70px;border-radius:50%;opacity:.12;}
+.stat-card.income::before{background:var(--income);}
+.stat-card.expense::before{background:var(--expense);}
+.stat-card.profit::before{background:var(--profit);}
+.stat-card.count::before{background:var(--accent3);}
+.stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:10px;}
+.stat-card.income .stat-icon{background:rgba(67,233,123,.15);color:var(--income);}
+.stat-card.expense .stat-icon{background:rgba(255,101,132,.15);color:var(--expense);}
+.stat-card.profit .stat-icon{background:rgba(56,189,248,.15);color:var(--profit);}
+.stat-card.count .stat-icon{background:rgba(250,130,49,.15);color:var(--accent3);}
+.stat-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.stat-value{font-size:clamp(13px,4vw,20px);font-weight:800;margin:4px 0 2px;color:var(--text);line-height:1.2;word-break:break-all;}
+.stat-sub{font-size:10px;color:var(--text3);}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px;}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;overflow:hidden;}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
+.chart-title{font-size:13px;font-weight:700;color:var(--text);}
+.chart-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;width:100%;}
+.filter-select,.filter-input{padding:9px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);outline:none;cursor:pointer;transition:all .2s;-webkit-appearance:none;min-height:40px;}
+.filter-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236868A0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px;}
+.filter-select:focus,.filter-input:focus{border-color:var(--primary);}
+option{background:var(--bg2);}
+
+/* BUTTONS */
+.btn{padding:9px 14px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s;font-family:var(--font);-webkit-appearance:none;touch-action:manipulation;min-height:40px;white-space:nowrap;outline:none;text-decoration:none;}
+.btn:focus{outline:none;}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;}
+.btn-primary:active{transform:scale(.97);}
+.btn-success{background:linear-gradient(135deg,var(--income),#28C96A);color:#fff;}
+.btn-danger{background:linear-gradient(135deg,var(--accent),#D94F6A);color:#fff;}
+.btn-warning{background:linear-gradient(135deg,var(--accent3),#E5721E);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-outline:active{border-color:var(--primary);color:var(--primary);}
+.btn-sm{padding:7px 11px;font-size:12px;min-height:34px;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* TABLE & CARD LIST */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:100%;}
+.table-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
+table{width:100%;border-collapse:collapse;min-width:480px;}
+thead tr{background:var(--bg3);}
+thead th{padding:9px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);white-space:nowrap;}
+tbody tr{border-bottom:1px solid rgba(108,99,255,.08);transition:background .15s;}
+tbody tr:hover,tbody tr:active{background:rgba(108,99,255,.06);}
+tbody tr:last-child{border-bottom:none;}
+tbody td{padding:10px 10px;font-size:12px;color:var(--text2);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.badge-income{background:rgba(67,233,123,.15);color:var(--income);}
+.badge-expense{background:rgba(255,101,132,.15);color:var(--expense);}
+.amount-income{color:var(--income);font-weight:700;}
+.amount-expense{color:var(--expense);font-weight:700;}
+.action-btns{display:flex;gap:4px;}
+
+/* SLIP THUMB */
+.slip-thumb-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;touch-action:manipulation;}
+.slip-thumb-btn img{width:100%;height:100%;object-fit:cover;}
+.slip-thumb-btn.empty{color:var(--text3);}
+
+/* MOBILE CARD LIST */
+.tx-card-list{display:none;}
+.tx-card{padding:12px 14px;border-bottom:1px solid rgba(108,99,255,.08);display:flex;align-items:center;gap:10px;}
+.tx-card:last-child{border-bottom:none;}
+.tx-card-icon{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.tx-card-icon.income{background:rgba(67,233,123,.15);color:var(--income);}
+.tx-card-icon.expense{background:rgba(255,101,132,.15);color:var(--expense);}
+.tx-card-body{flex:1;min-width:0;}
+.tx-card-desc{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tx-card-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.tx-card-right{text-align:right;flex-shrink:0;}
+.tx-card-amt{font-size:13px;font-weight:800;}
+.tx-card-cur{font-size:10px;color:var(--text3);margin-top:1px;}
+.tx-card-actions{display:flex;gap:4px;margin-top:4px;justify-content:flex-end;align-items:center;}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-height:92dvh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.5);animation:slideUp .3s cubic-bezier(.4,0,.2,1);padding-bottom:max(16px,var(--safe-bottom));}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 0;}
+.modal-header{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);}
+.modal-body{padding:14px 18px;}
+.modal-footer{padding:0 18px 14px;display:flex;justify-content:flex-end;gap:8px;flex-direction:column-reverse;}
+.modal-footer .btn{width:100%;justify-content:center;}
+.btn-close{background:none;border:none;color:var(--text2);font-size:17px;cursor:pointer;padding:4px;border-radius:6px;min-width:34px;min-height:34px;display:flex;align-items:center;justify-content:center;outline:none;}
+.btn-close:focus{outline:none;}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-group-modal{margin-bottom:14px;}
+.form-group-modal label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.form-group-modal input,.form-group-modal select,.form-group-modal textarea{width:100%;padding:12px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:var(--font);outline:none;transition:all .2s;-webkit-appearance:none;min-height:46px;}
+.form-group-modal select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236868A0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
+.form-group-modal input:focus,.form-group-modal select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.15);}
+.form-group-modal textarea{resize:vertical;min-height:70px;}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bg3);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+.type-btn{padding:13px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;border:none;background:transparent;color:var(--text2);font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:7px;min-height:46px;touch-action:manipulation;outline:none;}
+.type-btn.income.active{background:rgba(67,233,123,.2);color:var(--income);}
+.type-btn.expense.active{background:rgba(255,101,132,.2);color:var(--expense);}
+
+/* SLIP UPLOAD BOX */
+.slip-upload-box{border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3);}
+.slip-upload-box:hover,.slip-upload-box:active{border-color:var(--primary);}
+.slip-upload-box i{font-size:20px;color:var(--primary);margin-bottom:6px;display:block;}
+.slip-upload-box span{font-size:12px;color:var(--text2);}
+.slip-preview-wrap{position:relative;display:inline-block;margin-top:10px;}
+.slip-preview-wrap img{max-width:130px;max-height:130px;border-radius:10px;border:1px solid var(--border);display:block;object-fit:cover;}
+.slip-remove-btn{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;}
+
+/* MISC */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px 20px;color:var(--text3);flex-direction:column;gap:14px;}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-state i{font-size:36px;margin-bottom:10px;opacity:.4;display:block;}
+
+.year-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;}
+.year-tab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;font-family:var(--font);white-space:nowrap;touch-action:manipulation;min-height:34px;outline:none;}
+.year-tab.active{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;}
+
+.month-tabs{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;-webkit-overflow-scrolling:touch;}
+.month-tab{padding:7px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;white-space:nowrap;font-family:var(--font);touch-action:manipulation;flex-shrink:0;min-height:32px;outline:none;}
+.month-tab.active{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-color:var(--primary);}
+
+.sync-dot{width:7px!important;height:7px!important;min-width:7px!important;min-height:7px!important;max-width:7px!important;max-height:7px!important;border-radius:50%!important;background:var(--income);animation:pulse 2s infinite;flex-shrink:0!important;display:block!important;}
+.sync-dot.loading{background:var(--accent3)!important;}
+.sync-dot.error{background:var(--accent)!important;animation:none;}
+
+.rt-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(67,233,123,.15);color:var(--income);border:1px solid rgba(67,233,123,.3);}
+.rt-dot{width:6px;height:6px;border-radius:50%;background:var(--income);animation:pulse 1.5s infinite;}
+
+.cur-info-bar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(108,99,255,.08);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;color:var(--text3);margin-bottom:12px;flex-wrap:wrap;}
+.cur-info-bar span{display:flex;align-items:center;gap:3px;}
+.cur-info-bar b{color:var(--text2);}
+
+.date-range-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;width:100%;}
+.date-range-row label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;flex-shrink:0;}
+.date-range-row input[type=date]{padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:all .2s;cursor:pointer;-webkit-appearance:none;min-height:38px;flex:1;min-width:120px;}
+.date-range-row input[type=date]:focus{border-color:var(--primary);}
+.dash-sep{color:var(--text3);flex-shrink:0;}
+
+.settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.settings-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.color-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.color-row label{flex:1;font-size:13px;color:var(--text2);}
+.color-row input[type=color]{width:44px;height:34px;padding:2px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;-webkit-appearance:none;}
+hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* Toast */
+.toast-container{position:fixed;top:max(12px,calc(var(--safe-top)+8px));right:max(12px,var(--safe-right));z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 24px);}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:8px;max-width:300px;box-shadow:var(--shadow);animation:slideRight .3s ease;font-size:12px;border-left:4px solid var(--primary);}
+.toast.success{border-left-color:var(--income);}
+.toast.error{border-left-color:var(--accent);}
+.toast.info{border-left-color:var(--profit);}
+
+/* FAB */
+.fab{position:fixed;right:max(16px,var(--safe-right));bottom:calc(var(--bottomnav-h) + var(--safe-bottom) + 14px);z-index:90;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:20px;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(108,99,255,.5);transition:transform .2s;touch-action:manipulation;outline:none;}
+.fab:active{transform:scale(.92);}
+
+/* Source embed */
+.source-embed{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;height:280px;}
+.source-embed iframe{width:100%;height:100%;border:none;}
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+@media (max-width:767px){
+  .sidebar{transform:translateX(-100%);box-shadow:none;}
+  .sidebar.open{transform:translateX(0);box-shadow:8px 0 32px rgba(0,0,0,.4);}
+  .main{margin-left:0;width:100%;max-width:100vw;}
+  .content{padding-bottom:calc(var(--bottomnav-h) + var(--safe-bottom) + 14px);}
+  .bottom-nav{display:flex;}
+  .fab{display:flex;}
+  .table-scroll table{display:none;}
+  .tx-card-list{display:block;}
+  .chart-grid{grid-template-columns:1fr;}
+  .chart-card canvas{max-height:190px;}
+  .form-row{grid-template-columns:1fr;}
+  .modal{border-radius:20px 20px 0 0;max-height:96dvh;}
+  .modal-body{padding:12px 14px;}
+  .modal-header{padding:10px 14px 0;}
+  .source-embed{height:200px;}
+}
+@media (min-width:768px){
+  :root{--topbar-h:60px;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:14px;}
+  .chart-grid{grid-template-columns:3fr 2fr;}
+  .content{padding:18px 20px;}
+  .modal{border-radius:20px;max-width:560px;align-self:center;}
+  .modal-overlay{align-items:center;}
+  .modal-footer{flex-direction:row;}
+  .modal-footer .btn{width:auto;}
+  .topbar{padding:0 18px;gap:10px;}
+  .topbar-title{font-size:16px;}
+  .topbar-sync{display:flex!important;}
+  .source-embed{height:350px;}
+}
+@media (min-width:1024px){
+  :root{--topbar-h:64px;}
+  .stat-grid{grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:20px;}
+  .content{padding:24px 28px;}
+  .topbar{padding:0 28px;gap:12px;}
+  .topbar-title{font-size:18px;}
+  .stat-card{padding:20px;}
+  .stat-icon{width:44px;height:44px;font-size:18px;margin-bottom:14px;}
+  .modal{max-width:580px;}
+  .source-embed{height:400px;}
+}
+@media (max-width:359px){
+  .stat-grid{gap:7px;}
+  .stat-card{padding:10px;}
+  .stat-value{font-size:13px;}
+  .cur-btn{padding:4px 5px;font-size:10px;min-width:28px;}
+  .content{padding:10px;}
+  .topbar{padding:0 8px;gap:4px;}
+}
+
+/* ANIMATIONS */
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.page{animation:fadeIn .25s ease;}
+*:focus{outline:none;}
+*:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+</style>
+<script>
+(function(){
+  try{
+    var cached = JSON.parse(localStorage.getItem('emo_theme_cache')||'null');
+    if(cached){
+      if(cached.primaryColor) document.documentElement.style.setProperty('--primary',cached.primaryColor);
+      if(cached.accentColor)  document.documentElement.style.setProperty('--accent',cached.accentColor);
+      if(cached.darkMode!==undefined){
+        var isLight = String(cached.darkMode).toLowerCase()!=='true';
+        document.documentElement.setAttribute('data-light', String(isLight));
+      }
+    }
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-img-wrap" id="loginLogoWrap" onclick="triggerLogoUpload()" title="ກົດເພື່ອປ່ຽນໂລໂກ້">
+        <span id="loginLogoEmoji">💰</span>
+        <img id="loginLogoImg" alt="logo">
+        <div class="edit-overlay"><i class="fas fa-camera"></i></div>
+      </div>
+      <input type="file" id="logoFileInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+      <div class="app-name" id="loginAppName">EMO Finance</div>
+      <div class="app-sub" id="loginAppSub">ລະບົບບໍລິຫານລາຍຮັບ-ລາຍຈ່າຍ</div>
+    </div>
+    <div class="form-group">
+      <label>ຊື່ຜູ້ໃຊ້</label>
+      <input type="text" id="loginUser" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>ລະຫັດຜ່ານ</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()">
+      <i class="fas fa-sign-in-alt" style="margin-right:8px"></i>ເຂົ້າລະບົບ
+    </button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="layout">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo" id="sidebarLogo"><span id="sidebarLogoEmoji">💰</span></div>
+        <div style="flex:1;min-width:0;">
+          <div class="sidebar-title" id="sidebarName">EMO Finance</div>
+          <div class="sidebar-title"><span>ລາຍຮັບ-ລາຍຈ່າຍ</span></div>
+        </div>
+        <button class="icon-btn" style="margin-left:auto;" onclick="closeSidebar()"><i class="fas fa-times"></i></button>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-label">ຫຼັກ</div>
+          <button class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon"><i class="fas fa-chart-pie"></i></span>Dashboard</button>
+          <button class="nav-item" onclick="navigate('transactions')"><span class="nav-icon"><i class="fas fa-list-alt"></i></span>ລາຍການທັງໝົດ</button>
+          <button class="nav-item" onclick="navigate('income')"><span class="nav-icon"><i class="fas fa-arrow-down"></i></span>ລາຍຮັບ</button>
+          <button class="nav-item" onclick="navigate('expense')"><span class="nav-icon"><i class="fas fa-arrow-up"></i></span>ລາຍຈ່າຍ</button>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">ລາຍງານ</div>
+          <button class="nav-item" onclick="navigate('daily')"><span class="nav-icon"><i class="fas fa-calendar-day"></i></span>ປະຈຳວັນ</button>
+          <button class="nav-item" onclick="navigate('monthly')"><span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>ລາຍງານເດືອນ</button>
+          <button class="nav-item" onclick="navigate('yearly')"><span class="nav-icon"><i class="fas fa-calendar"></i></span>ລາຍງານປີ</button>
+        </div>
+        <div class="nav-section">
+          <div class="nav-label">ຈັດການ</div>
+          <button class="nav-item" onclick="navigate('source')"><span class="nav-icon"><i class="fas fa-table"></i></span>Google Sheet</button>
+          <button class="nav-item" onclick="navigate('settings')"><span class="nav-icon"><i class="fas fa-cog"></i></span>ຕັ້ງຄ່າ</button>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebarAvatar">A</div>
+          <div style="flex:1;min-width:0;">
+            <div class="user-name" id="sidebarUser">Admin</div>
+            <div class="user-role" id="sidebarRole">ຜູ້ດູແລລະບົບ</div>
+          </div>
+          <button class="icon-btn" style="min-width:32px;min-height:32px;" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+          <div class="topbar-title" id="pageTitle">Dashboard</div>
+        </div>
+        <div class="topbar-right">
+          <div class="currency-toggle" id="globalCurToggle">
+            <button class="cur-btn active" id="curLAK" onclick="setCurrency('LAK')">₭</button>
+            <button class="cur-btn" id="curTHB" onclick="setCurrency('THB')">฿</button>
+            <button class="cur-btn" id="curUSD" onclick="setCurrency('USD')">$</button>
+          </div>
+          <div class="topbar-sync" id="topSyncWrap">
+            <span id="syncStatus" style="white-space:nowrap;font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;">ເຊື່ອມຕໍ່</span>
+          </div>
+          <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div class="content" id="mainContent">
+        <div class="loading"><div class="spinner"></div><span>ກຳລັງໂຫລດ...</span></div>
+      </div>
+    </main>
+  </div>
+  <button class="fab" id="fab" onclick="openAddModal()"><i class="fas fa-plus"></i></button>
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bnav-item active" onclick="navigate('dashboard')" data-page="dashboard"><span class="bnav-icon"><i class="fas fa-chart-pie"></i></span><span class="bnav-label">ສະຫລຸບ</span></button>
+    <button class="bnav-item" onclick="navigate('transactions')" data-page="transactions"><span class="bnav-icon"><i class="fas fa-list-alt"></i></span><span class="bnav-label">ລາຍການ</span></button>
+    <button class="bnav-item" onclick="navigate('monthly')" data-page="monthly"><span class="bnav-icon"><i class="fas fa-calendar-alt"></i></span><span class="bnav-label">ເດືອນ</span></button>
+    <button class="bnav-item" onclick="navigate('yearly')" data-page="yearly"><span class="bnav-icon"><i class="fas fa-chart-bar"></i></span><span class="bnav-label">ປີ</span></button>
+    <button class="bnav-item" onclick="navigate('settings')" data-page="settings"><span class="bnav-icon"><i class="fas fa-cog"></i></span><span class="bnav-label">ຕັ້ງຄ່າ</span></button>
+  </nav>
+</div>
+
+<!-- TX MODAL -->
+<div class="modal-overlay" id="txModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">ເພີ່ມລາຍການໃໝ່</div>
+      <button class="btn-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group-modal" style="margin-bottom:16px;">
+        <label>ປະເພດ</label>
+        <div class="type-toggle">
+          <button class="type-btn income active" id="typeIncome" onclick="setType('income')"><i class="fas fa-arrow-down"></i> ລາຍຮັບ</button>
+          <button class="type-btn expense" id="typeExpense" onclick="setType('expense')"><i class="fas fa-arrow-up"></i> ລາຍຈ່າຍ</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group-modal"><label>ວັນທີ</label><input type="date" id="txDate"></div>
+        <div class="form-group-modal"><label>ໝວດໝູ່</label><select id="txCategory"></select></div>
+      </div>
+      <div class="form-group-modal"><label>ລາຍລະອຽດ</label><input type="text" id="txDesc" placeholder="ລາຍລະອຽດ..."></div>
+      <div class="form-row">
+        <div class="form-group-modal"><label>ຈຳນວນ</label><input type="number" id="txAmount" placeholder="0" min="0" step="any" inputmode="decimal"></div>
+        <div class="form-group-modal"><label>ສະກຸນ</label>
+          <select id="txCurrency" onchange="onCurrencyChange()">
+            <option value="LAK">LAK (₭)</option>
+            <option value="THB">THB (฿)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+      </div>
+      <div id="exRateGroup" style="display:none;">
+        <div class="form-row">
+          <div class="form-group-modal"><label>ອັດຕາ (1=?LAK)</label><input type="number" id="txExRate" placeholder="680" step="any" inputmode="decimal"></div>
+          <div class="form-group-modal"><label>LAK</label><input type="text" id="txAmtLAK" readonly style="opacity:.6;"></div>
+        </div>
+      </div>
+
+      <!-- ✅ ຊ່ອງອັບໂຫລດ Slip ການໂອນ (ຈຸດທີ່ຜູ້ໃຊ້ວົງໄວ້) -->
+      <div class="form-group-modal">
+        <label><i class="fas fa-receipt" style="margin-right:5px;"></i>ສະລິບການໂອນ (Slip)</label>
+        <input type="file" id="txSlipFile" accept="image/*" style="display:none" onchange="previewSlip(this)">
+        <div id="slipUploadBox" class="slip-upload-box" onclick="document.getElementById('txSlipFile').click()">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>ກົດເພື່ອເລືອກຮູບ Slip (ບໍ່ບັງຄັບ)</span>
+        </div>
+        <div id="slipPreviewWrap" class="slip-preview-wrap" style="display:none;">
+          <img id="slipPreviewImg" src="" alt="slip">
+          <button type="button" class="slip-remove-btn" onclick="removeSlip()"><i class="fas fa-times"></i></button>
+        </div>
+        <input type="hidden" id="txPhotoUrl" value="">
+      </div>
+
+      <div class="form-group-modal"><label>ໝາຍເຫດ</label><textarea id="txNote" placeholder="ໝາຍເຫດ..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveTx()" id="saveTxBtn"><i class="fas fa-save"></i> ບັນທຶກ</button>
+      <button class="btn btn-outline" onclick="closeModal()">ຍົກເລີກ</button>
+    </div>
+  </div>
+</div>
+
+<!-- SLIP VIEW MODAL -->
+<div class="modal-overlay" id="slipModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-receipt" style="margin-right:8px;color:var(--primary);"></i>ລາຍລະອຽດ Slip</div>
+      <button class="btn-close" onclick="closeSlipModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="slipModalBody"></div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--accent)"><i class="fas fa-trash-alt" style="margin-right:8px"></i>ລຶບລາຍການ</div>
+      <button class="btn-close" onclick="closeDelModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body"><p style="color:var(--text2);font-size:14px;line-height:1.6">ທ່ານຕ້ອງການລຶບລາຍການນີ້ແທ້ ຫລື ບໍ? ການກະທຳນີ້ຈະບໍ່ສາມາດກູ້ຄືນໄດ້.</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="confirmDelete()"><i class="fas fa-trash-alt"></i> ລຶບ</button>
+      <button class="btn btn-outline" onclick="closeDelModal()">ຍົກເລີກ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="adminModalTitle">ເພີ່ມຜູ້ໃຊ້</div>
+      <button class="btn-close" onclick="closeAdminModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group-modal"><label>ຊື່ຜູ້ໃຊ້</label><input type="text" id="adminUsername"></div>
+      <div class="form-group-modal"><label>ລະຫັດຜ່ານ</label><input type="password" id="adminPassword"></div>
+      <div class="form-group-modal"><label>ຊື່ສະແດງ</label><input type="text" id="adminDisplayName"></div>
+      <div class="form-group-modal"><label>ສິດທິ</label>
+        <select id="adminRole">
+          <option value="admin">Admin (ເຕັມສິດ)</option>
+          <option value="viewer">Viewer (ເບິ່ງຢ່າງດຽວ)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveAdmin()"><i class="fas fa-save"></i> ບັນທຶກ</button>
+      <button class="btn btn-outline" onclick="closeAdminModal()">ຍົກເລີກ</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXT SOURCE MODAL -->
+<div class="modal-overlay" id="extModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">ເພີ່ມ Google Sheet</div>
+      <button class="btn-close" onclick="closeExtModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group-modal"><label>ຊື່</label><input type="text" id="extName"></div>
+      <div class="form-group-modal"><label>Sheet ID ຫຼື URL</label><input type="text" id="extSheetId">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">ຕົວຢ່າງ: ...spreadsheets/d/<b>ID</b>/edit</div>
+      </div>
+      <div class="form-group-modal"><label>ລາຍລະອຽດ</label><input type="text" id="extDesc"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveExtSource()"><i class="fas fa-plus"></i> ເພີ່ມ</button>
+      <button class="btn btn-outline" onclick="closeExtModal()">ຍົກເລີກ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ⚙️ CONFIG — แก้ไข GAS_URL ให้ตรงกับ Web App URL ของคุณ
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwDk5NK4bI5MDAp0CrUe2qHpMF4XNbp877JK4ngOnu7K4jiT_ZUyiOvFMaZT4vyh0tctw/exec';
+const DATA_SHEET   = '1pk6ahl0NnuE-mbAjlf-e65GM_OFKlXBZLjRcNLPDxWI';
+const SOURCE_SHEET = '1mp8Flf23UUJd-AJ5MaSv-iLo6JwqcFqXVKfRpWcc8gM';
+const MONTH_NAMES  = ['','ມັງກອນ','ກຸມພາ','ມີນາ','ເມສາ','ພຶດສະພາ','ມິຖຸນາ','ກໍລະກົດ','ສິງຫາ','ກັນຍາ','ຕຸລາ','ພະຈິກ','ທັນວາ'];
+const SLIP_FOLDER_ID = '13OdTo9obNvLhIU7MF9ZqnrXB_4TbnnfP'; // ✅ Google Drive folder ສຳລັບເກັບ Slip
+
+// ============================================================
+// 🌐 API BRIDGE — fetch ผ่าน POST ไปยัง GAS
+// ============================================================
+async function gasCall(fn, ...args) {
+  return gasCallEx(fn, args, 8000);
+}
+
+async function gasCall(fn, ...args) {
+  return gasCallEx(fn, args, 8000);
+}
+
+async function gasCallEx(fn, args, timeoutMs) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ fn, args }),
+      redirect: 'follow',
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      console.warn('GAS response is not JSON, using demo data');
+      return demoFallback(fn, args);
+    }
+
+  } catch (err) {
+    console.warn(`gasCall(${fn}) failed:`, err.message);
+    return demoFallback(fn, args);
+  }
+}
+
+// ============================================================
+// 🎭 DEMO FALLBACK — ใช้เมื่อ API ยังไม่พร้อม
+// ============================================================
+function demoFallback(fn, args) {
+  const y = new Date().getFullYear();
+  if (fn === 'login')   return { success: args[0]==='admin' && args[1]==='emo2025', role:'admin', displayName:'Administrator', token:'demo-token' };
+  if (fn === 'getAllTransactions') return { success:true, data: getDemoData() };
+  if (fn === 'getSummary')  return buildDemoSummary(args[0]);
+  if (fn === 'getAvailableYears') return { success:true, years:[y, y-1, y-2] };
+  if (fn === 'getCategories') return { success:true, income:['ລາຍຮັບຈາກທຸລະກິດ','ເງິນເດືອນ','ອື່ນໆ'], expense:['ຄ່າໃຊ້ຈ່າຍ','ອື່ນໆ'] };
+  if (fn === 'getSettings') return { success:true, settings:{ appName:'EMO Finance', primaryColor:'#6C63FF', accentColor:'#FF6584', darkMode:'false', logoUrl:'', exchangeRateTHB:'680', exchangeRateUSD:'21660' }};
+  if (fn === 'getAdmins') return { success:true, data:[{username:'admin',displayName:'Administrator',role:'admin',active:'true'}] };
+  if (fn === 'getActiveSessions') return { success:true, data:[] };
+  if (fn === 'getExternalSources') return { success:true, data:[] };
+  if (fn === 'uploadSlip') return { success:false, error:'Demo mode: ບໍ່ສາມາດອັບໂຫລດ Slip ໄດ້ (ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່ GAS ແທ້)' };
+  return { success: true };
+}
+
+function getDemoData() {
+  const y = new Date().getFullYear();
+  return [
+    { ID:'TX-001', Date:`${y}-05-10`, Type:'income',  Category:'ລາຍຮັບຈາກທຸລະກິດ', Description:'ຖອນ ເດືອນ 4 ຈາກ Bigo', Amount:27285, Currency:'THB', ExchangeRate:680, AmountLAK:18553800, Month:5, Year:y, PhotoURL:'' },
+    { ID:'TX-002', Date:`${y}-04-01`, Type:'income',  Category:'ລາຍຮັບ',             Description:'ລາຍຮັບ',                   Amount:41990, Currency:'THB', ExchangeRate:680, AmountLAK:28553200, Month:4, Year:y, PhotoURL:'' },
+    { ID:'TX-003', Date:`${y}-04-03`, Type:'expense', Category:'ຄ່າໃຊ້ຈ່າຍ',         Description:'ຄ່າໃຊ້ຈ່າຍ',               Amount:800,   Currency:'THB', ExchangeRate:680, AmountLAK:544000,   Month:4, Year:y, PhotoURL:'' },
+  ];
+}
+function buildDemoSummary(year) {
+  const data = getDemoData().filter(r => !year || r.Year === parseInt(year));
+  const ti = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+r.AmountLAK,0);
+  const te = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+r.AmountLAK,0);
+  const monthly = {};
+  for(let m=1;m<=12;m++){ const md=data.filter(r=>r.Month===m); monthly[m]={ income:md.filter(r=>r.Type==='income').reduce((s,r)=>s+r.AmountLAK,0), expense:md.filter(r=>r.Type==='expense').reduce((s,r)=>s+r.AmountLAK,0) }; }
+  return { success:true, totalIncome:ti, totalExpense:te, netProfit:ti-te, monthly, categories:{}, count:data.length };
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const STATE = {
+  loggedIn:false, page:'dashboard', token:'', currentUser:'', currentRole:'',
+  allTx:[], categories:{income:[],expense:[]}, settings:{}, summary:{}, availableYears:[],
+  editId:null, deleteId:null, editAdmin:null,
+  selectedYear:new Date().getFullYear(), selectedMonth:null,
+  currentType:'income', lightMode:false, charts:{},
+  externalSources:[], admins:[], activeSessions:[],
+  lastTxCount:0, realtimeInterval:null,
+  displayCurrency:'LAK',
+  dashDateFrom:'', dashDateTo:'', selectedDashMonth:''
+};
+
+// ============================================================
+// SLIP UPLOAD STATE (ໃນໜ້າຟອມເພີ່ມ/ແກ້ໄຂລາຍການ)
+// ============================================================
+let slipBase64 = null, slipFileName = null, slipMimeType = null;
+
+function previewSlip(input) {
+  const file = input.files[0]; if(!file) return;
+  slipFileName = file.name; slipMimeType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    slipBase64 = e.target.result;
+    document.getElementById('slipPreviewImg').src = slipBase64;
+    document.getElementById('slipPreviewWrap').style.display = 'inline-block';
+    document.getElementById('slipUploadBox').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function removeSlip() {
+  slipBase64 = null; slipFileName = null; slipMimeType = null;
+  document.getElementById('txSlipFile').value = '';
+  document.getElementById('txPhotoUrl').value = '';
+  document.getElementById('slipPreviewWrap').style.display = 'none';
+  document.getElementById('slipUploadBox').style.display = 'block';
+}
+
+// ============================================================
+// CURRENCY HELPERS
+// ============================================================
+function getRates() { return { THB:parseFloat(STATE.settings.exchangeRateTHB||680), USD:parseFloat(STATE.settings.exchangeRateUSD||21660) }; }
+function toDisplay(amtLAK) {
+  const r = getRates();
+  if(STATE.displayCurrency==='THB') return amtLAK/r.THB;
+  if(STATE.displayCurrency==='USD') return amtLAK/r.USD;
+  return amtLAK;
+}
+function fmtCur(amtLAK, sign) {
+  const v = toDisplay(amtLAK), abs = Math.abs(v);
+  let str;
+  if(STATE.displayCurrency==='USD') str = abs.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  else if(STATE.displayCurrency==='THB') str = abs.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  else str = Math.round(abs).toLocaleString();
+  const sym = STATE.displayCurrency==='LAK'?'₭':STATE.displayCurrency==='THB'?'฿':'$';
+  return (sign||'')+str+' '+sym;
+}
+function setCurrency(cur) {
+  STATE.displayCurrency = cur;
+  ['LAK','THB','USD'].forEach(c => { const el=document.getElementById('cur'+c); if(el) el.classList.toggle('active',c===cur); });
+  updateCurrencyToggleLabels();
+  refreshCurrentPage();
+}
+function updateCurrencyToggleLabels() {
+  const isMob = window.innerWidth < 768;
+  const labels = { LAK:'₭', THB:'฿', USD:'$' };
+  const full   = { LAK:'₭ LAK', THB:'฿ THB', USD:'$ USD' };
+  ['LAK','THB','USD'].forEach(c => {
+    const el = document.getElementById('cur'+c);
+    if(el) { el.textContent = isMob ? labels[c] : full[c]; el.classList.toggle('active', c===STATE.displayCurrency); }
+  });
+}
+
+// ============================================================
+// LOGO
+// ============================================================
+function triggerLogoUpload() { document.getElementById('logoFileInput').click(); }
+function handleLogoUpload(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    applyLogo(e.target.result);
+    gasCall('saveSettings',{logoUrl:e.target.result}).catch(()=>{});
+    showToast('ໂລໂກ້ອັບໂຫລດສຳເລັດ ✅','success');
+  };
+  reader.readAsDataURL(file);
+}
+function applyLogo(url) {
+  if(!url||String(url).trim()==='') return;
+  const emoji=document.getElementById('loginLogoEmoji'), img=document.getElementById('loginLogoImg');
+  if(emoji) emoji.style.display='none';
+  if(img){img.src=url;img.style.display='block';}
+  const sl=document.getElementById('sidebarLogo');
+  if(sl){ sl.innerHTML=''; const simg=document.createElement('img'); simg.src=url; simg.alt='logo'; simg.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;'; sl.appendChild(simg); }
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); document.body.style.overflow='hidden'; }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); document.body.style.overflow=''; }
+
+// ============================================================
+// AUTH
+// ============================================================
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  if(!u||!p){ err.textContent='ກະລຸນາໃສ່ຊື່ ແລະ ລະຫັດ'; return; }
+  try {
+    setSyncStatus('loading','ກຳລັງເຂົ້າ...');
+    const r = await gasCall('login',u,p);
+    if(r.success) {
+      STATE.loggedIn=true; STATE.token=r.token||''; STATE.currentUser=u; STATE.currentRole=r.role||'admin';
+      document.getElementById('sidebarUser').textContent=r.displayName||u;
+      document.getElementById('sidebarRole').textContent=r.role==='admin'?'ຜູ້ດູແລລະບົບ':'Viewer';
+      document.getElementById('sidebarAvatar').textContent=(r.displayName||u)[0].toUpperCase();
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('app').style.display='block';
+
+      await initApp();
+    } else {
+      err.textContent=r.error||'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ'; setSyncStatus('error','');
+    }
+  } catch(e) { err.textContent='ຜິດພາດ: '+e; setSyncStatus('error',''); }
+}
+async function doLogout() {
+  if(STATE.realtimeInterval) clearInterval(STATE.realtimeInterval);
+  await gasCall('logout',STATE.token).catch(()=>{});
+  STATE.loggedIn=false;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// ============================================================
+// INIT
+// ============================================================
+async function initApp() {
+  // ✅ ໂຊວ໌ Dashboard ທັນທີ ບໍ່ຕ້ອງລໍຖ້າຂໍ້ມູນ
+  if(!STATE.availableYears.length) STATE.availableYears=[new Date().getFullYear()];
+  navigate('dashboard');
+  setSyncStatus('loading','ກຳລັງໂຫລດ...');
+
+  try {
+    await gasCall('initializeSheets');
+    const [catRes,setRes,yearRes] = await Promise.all([gasCall('getCategories'),gasCall('getSettings'),gasCall('getAvailableYears')]);
+    if(catRes.success)  STATE.categories = catRes;
+    if(setRes.success)  { STATE.settings = setRes.settings; applySettings(); }
+    if(yearRes.success) { STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020); if(!STATE.availableYears.length) STATE.availableYears=[new Date().getFullYear()]; }
+    if(!STATE.availableYears.includes(STATE.selectedYear)) STATE.selectedYear=STATE.availableYears[0];
+    updateCurrencyToggleLabels();
+    await loadAllData();
+    refreshCurrentPage();
+    setSyncStatus('ok','ເຊື່ອມຕໍ່');
+    startRealtimeSync();
+  } catch(e) {
+    setSyncStatus('error','ຜິດພາດ');
+    await loadAllData();
+    refreshCurrentPage();
+  }
+}
+
+async function loadAllData() {
+  setSyncStatus('loading');
+  try {
+    const [txRes,sumRes] = await Promise.all([gasCall('getAllTransactions'),gasCall('getSummary',STATE.selectedYear)]);
+    if(txRes.success) {
+      STATE.allTx = (txRes.data||[]).map(r=>({...r,Amount:parseFloat(r.Amount)||0,AmountLAK:parseFloat(r.AmountLAK)||0,ExchangeRate:parseFloat(r.ExchangeRate)||1,Month:parseInt(r.Month)||0,Year:parseInt(r.Year)||0,PhotoURL:r.PhotoURL||''}));
+      STATE.lastTxCount = STATE.allTx.length;
+    }
+    if(sumRes.success) STATE.summary = sumRes;
+    setSyncStatus('ok','ເຊື່ອມຕໍ່');
+  } catch(e) { setSyncStatus('error','ຜິດພາດ'); }
+}
+
+// ============================================================
+// REALTIME SYNC
+// ============================================================
+function startRealtimeSync() {
+  if(STATE.realtimeInterval) clearInterval(STATE.realtimeInterval);
+  STATE.realtimeInterval = setInterval(async()=>{
+    try {
+      const txRes = await gasCall('getAllTransactions');
+      if(!txRes.success) return;
+      const newTx = (txRes.data||[]).map(r=>({...r,Amount:parseFloat(r.Amount)||0,AmountLAK:parseFloat(r.AmountLAK)||0,Month:parseInt(r.Month)||0,Year:parseInt(r.Year)||0,PhotoURL:r.PhotoURL||''}));
+      if(newTx.length!==STATE.lastTxCount || JSON.stringify(newTx.map(r=>r.ID))!==JSON.stringify(STATE.allTx.map(r=>r.ID))) {
+        STATE.allTx=newTx; STATE.lastTxCount=newTx.length;
+        const sumRes = await gasCall('getSummary',STATE.selectedYear);
+        if(sumRes.success) STATE.summary=sumRes;
+        refreshCurrentPage();
+        setSyncStatus('ok','ອັບ '+new Date().toLocaleTimeString('lo'));
+        showToast('ຂໍ້ມູນ Realtime ອັບເດດ 🔄','info');
+      }
+    } catch(_){}
+  }, 15000);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const PAGE_TITLES = { dashboard:'Dashboard', transactions:'ລາຍການທັງໝົດ', income:'ລາຍຮັບ', expense:'ລາຍຈ່າຍ', daily:'ລາຍງານວັນ', monthly:'ລາຍງານເດືອນ', yearly:'ລາຍງານປີ', source:'Google Sheet', settings:'ຕັ້ງຄ່າ' };
+function navigate(page) {
+  STATE.page = page;
+  document.querySelectorAll('.nav-item').forEach(el => { el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${page}'`)); });
+  document.querySelectorAll('.bnav-item').forEach(el => el.classList.toggle('active', el.dataset.page===page));
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page]||page;
+  const content = document.getElementById('mainContent');
+  const renders = { dashboard:()=>renderDashboard(content), transactions:()=>renderTransactions(content,null), income:()=>renderTransactions(content,'income'), expense:()=>renderTransactions(content,'expense'), daily:()=>renderDaily(content), monthly:()=>renderMonthly(content), yearly:()=>renderYearly(content), source:()=>renderSource(content), settings:()=>renderSettings(content) };
+  (renders[page]||function(){})();
+  closeSidebar();
+  window.scrollTo(0,0);
+}
+function refreshCurrentPage() { navigate(STATE.page); }
+async function doSelectYear(y, afterFn) {
+  STATE.selectedYear = y;
+  setSyncStatus('loading','ໂຫລດ...');
+  const sumRes = await gasCall('getSummary',y).catch(()=>({success:false}));
+  if(sumRes.success) STATE.summary = sumRes;
+  setSyncStatus('ok','ເຊື່ອມຕໍ່');
+  if(afterFn) afterFn(); else navigate(STATE.page);
+}
+
+// ============================================================
+// CURRENCY INFO BAR
+// ============================================================
+function curInfoBarHtml() {
+  const r = getRates();
+  return `<div class="cur-info-bar">
+    <i class="fas fa-exchange-alt" style="color:var(--primary)"></i>
+    <span>ສະກຸນ: <b>${STATE.displayCurrency}</b></span>
+    <span>1฿=<b>${r.THB}₭</b></span>
+    <span>1$=<b>${r.USD.toLocaleString()}₭</b></span>
+    ${STATE.displayCurrency!=='LAK'?`<span style="color:var(--primary-light);font-weight:700">⚡ ${STATE.displayCurrency}</span>`:''}
+  </div>`;
+}
+
+function applyDateRange(data) {
+  let d = data;
+  if(STATE.dashDateFrom){ const from=new Date(STATE.dashDateFrom); d=d.filter(r=>new Date(r.Date)>=from); }
+  if(STATE.dashDateTo)  { const to=new Date(STATE.dashDateTo); to.setHours(23,59,59); d=d.filter(r=>new Date(r.Date)<=to); }
+  return d;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function renderDashboard(el) {
+  const today = new Date().toISOString().split('T')[0];
+  if(!STATE.dashDateFrom) STATE.dashDateFrom=`${STATE.selectedYear}-01-01`;
+  if(!STATE.dashDateTo)   STATE.dashDateTo=today;
+  let yearData = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  let filteredData = applyDateRange(yearData);
+  const dm = STATE.selectedDashMonth||'';
+  if(dm) filteredData = filteredData.filter(r=>r.Month===parseInt(dm));
+
+  el.innerHTML=`<div class="page">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <div class="year-tabs" style="margin:0;flex-wrap:nowrap;" id="dashYearTabs">
+        ${STATE.availableYears.map(y=>`<button class="year-tab ${y===STATE.selectedYear?'active':''}" onclick="doSelectYear(${y})">${y}</button>`).join('')}
+      </div>
+      <select class="filter-select" id="dashMonth" onchange="onDashMonthChange()" style="font-size:12px;flex:1;min-width:110px;max-width:160px;">
+        <option value="">ທຸກເດືອນ</option>
+        ${MONTH_NAMES.slice(1).map((n,i)=>`<option value="${i+1}" ${dm==i+1?'selected':''}>${n}</option>`).join('')}
+      </select>
+      <button class="icon-btn btn-sm" onclick="refreshData()" style="flex-shrink:0;"><i class="fas fa-sync-alt"></i></button>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <i class="fas fa-calendar" style="color:var(--primary);font-size:12px;flex-shrink:0;"></i>
+        <div class="date-range-row">
+          <label>ຈາກ</label>
+          <input type="date" id="dashDateFrom" value="${STATE.dashDateFrom}" onchange="onDashDateChange()">
+          <span class="dash-sep">—</span>
+          <label>ຫາ</label>
+          <input type="date" id="dashDateTo" value="${STATE.dashDateTo}" onchange="onDashDateChange()">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="resetDashDateRange()" style="flex-shrink:0;margin-left:auto;padding:6px 10px;"><i class="fas fa-undo"></i></button>
+      </div>
+    </div>
+    ${curInfoBarHtml()}
+    <div class="stat-grid" id="dashStats">${buildStatCards(filteredData)}</div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-header"><div><div class="chart-title">ລາຍຮັບ vs ລາຍຈ່າຍ</div><div class="chart-sub">ປີ ${STATE.selectedYear} · ${STATE.displayCurrency}</div></div></div>
+        <div style="position:relative;height:200px;width:100%;"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">ສັດສ່ວນ</div></div>
+        <div style="position:relative;height:200px;width:100%;"><canvas id="doughnutChart"></canvas></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head">
+        <div style="font-weight:700;font-size:13px;">ລາຍການລ່າສຸດ <span style="color:var(--text3)">(${filteredData.length})</span></div>
+        <button class="btn btn-outline btn-sm" onclick="navigate('transactions')">ທັງໝົດ <i class="fas fa-arrow-right"></i></button>
+      </div>
+      ${renderTxCards(filteredData.slice().reverse().slice(0,15),true)}
+      <div class="table-scroll">${renderTxTable(filteredData.slice().reverse().slice(0,15),true)}</div>
+    </div>
+  </div>`;
+  setTimeout(()=>{ drawBarChart(); drawDoughnutChart(); },80);
+}
+
+function onDashDateChange() { STATE.dashDateFrom=document.getElementById('dashDateFrom')?.value||''; STATE.dashDateTo=document.getElementById('dashDateTo')?.value||''; refreshDashStats(); }
+function onDashMonthChange() { STATE.selectedDashMonth=document.getElementById('dashMonth')?.value||''; refreshDashStats(); }
+function resetDashDateRange() { STATE.dashDateFrom=`${STATE.selectedYear}-01-01`; STATE.dashDateTo=new Date().toISOString().split('T')[0]; STATE.selectedDashMonth=''; navigate('dashboard'); }
+function refreshDashStats() {
+  let data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  data = applyDateRange(data);
+  if(STATE.selectedDashMonth) data = data.filter(r=>r.Month===parseInt(STATE.selectedDashMonth));
+  const el = document.getElementById('dashStats');
+  if(el) el.innerHTML = buildStatCards(data);
+}
+
+function buildStatCards(data) {
+  const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const net = inc-exp;
+  return `
+  <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+    <div class="stat-label">ລາຍຮັບ</div><div class="stat-value" style="color:var(--income)">${fmtCur(inc,'+')}</div><div class="stat-sub">${STATE.displayCurrency}</div></div>
+  <div class="stat-card expense"><div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+    <div class="stat-label">ລາຍຈ່າຍ</div><div class="stat-value" style="color:var(--expense)">${fmtCur(exp,'-')}</div><div class="stat-sub">${STATE.displayCurrency}</div></div>
+  <div class="stat-card profit"><div class="stat-icon"><i class="fas fa-wallet"></i></div>
+    <div class="stat-label">ກຳໄລ/ຂາດທຶນ</div>
+    <div class="stat-value" style="color:${net>=0?'var(--income)':'var(--expense)'}">
+      ${fmtCur(Math.abs(net),net>=0?'+':'-')}</div><div class="stat-sub">${net>=0?'ກຳໄລ':'ຂາດທຶນ'}</div></div>
+  <div class="stat-card count"><div class="stat-icon"><i class="fas fa-receipt"></i></div>
+    <div class="stat-label">ລາຍການ</div><div class="stat-value" style="color:var(--accent3)">${data.length}</div><div class="stat-sub">ລາຍການ</div></div>`;
+}
+
+function drawBarChart() {
+  const ctx = document.getElementById('barChart'); if(!ctx) return;
+  if(STATE.charts.bar) STATE.charts.bar.destroy();
+  const m = STATE.summary.monthly||{}, r = getRates();
+  const conv = v => { if(STATE.displayCurrency==='THB') return Math.round(v/r.THB*100)/100; if(STATE.displayCurrency==='USD') return Math.round(v/r.USD*100)/100; return Math.round(v/1000); };
+  STATE.charts.bar = new Chart(ctx,{
+    type:'bar',
+    data:{ labels:MONTH_NAMES.slice(1).map(n=>n.substring(0,3)), datasets:[
+      {label:'ລາຍຮັບ',data:Array.from({length:12},(_,i)=>conv(m[i+1]?.income||0)),backgroundColor:'rgba(67,233,123,.7)',borderRadius:4},
+      {label:'ລາຍຈ່າຍ',data:Array.from({length:12},(_,i)=>conv(m[i+1]?.expense||0)),backgroundColor:'rgba(255,101,132,.7)',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#A0A0C0',boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{color:'#888',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#888',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}}}}
+  });
+}
+function drawDoughnutChart() {
+  const ctx = document.getElementById('doughnutChart'); if(!ctx) return;
+  if(STATE.charts.doughnut) STATE.charts.doughnut.destroy();
+  const s = STATE.summary, inc = toDisplay(s.totalIncome||0), exp = toDisplay(s.totalExpense||0);
+  STATE.charts.doughnut = new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:['ລາຍຮັບ','ລາຍຈ່າຍ'],datasets:[{data:[Math.round(inc*100)/100,Math.round(exp*100)/100],backgroundColor:['rgba(67,233,123,.8)','rgba(255,101,132,.8)'],borderColor:['#43E97B','#FF6584'],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#A0A0C0',padding:10,font:{size:10}}}}}
+  });
+}
+
+// ============================================================
+// SLIP VIEW POPUP
+// ============================================================
+function viewSlip(id) {
+  const tx = STATE.allTx.find(r=>r.ID===id);
+  if(!tx || !tx.PhotoURL) { showToast('ລາຍການນີ້ບໍ່ມີ Slip','info'); return; }
+  document.getElementById('slipModalBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:14px;">
+      <img src="${tx.PhotoURL}" alt="slip" style="max-width:100%;max-height:340px;border-radius:12px;border:1px solid var(--border);object-fit:contain;">
+    </div>
+    <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="color:var(--text3);font-size:12px;">ປະເພດ</span>
+        <span class="badge badge-${tx.Type}">${tx.Type==='income'?'↓ ລາຍຮັບ':'↑ ລາຍຈ່າຍ'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="color:var(--text3);font-size:12px;">ວັນທີ</span>
+        <span style="font-weight:600;">${formatDate(tx.Date)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="color:var(--text3);font-size:12px;">ລາຍລະອຽດ</span>
+        <span style="font-weight:600;text-align:right;">${tx.Description||'-'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="color:var(--text3);font-size:12px;">ໝວດໝູ່</span>
+        <span>${tx.Category||'-'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text3);font-size:12px;">ຈຳນວນ</span>
+        <span class="amount-${tx.Type}" style="font-size:15px;">${tx.Type==='income'?'+':'-'}${fmtCur(tx.AmountLAK||0)}</span>
+      </div>
+    </div>
+    <a href="${tx.PhotoURL}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px;"><i class="fas fa-external-link-alt"></i> ເປີດຮູບເຕັມ</a>
+  `;
+  document.getElementById('slipModal').classList.add('open');
+}
+function closeSlipModal() { document.getElementById('slipModal').classList.remove('open'); }
+
+function slipCellHtml(r) {
+  if (r.PhotoURL) {
+    return `<button class="slip-thumb-btn" onclick="viewSlip('${r.ID}')" title="ເບິ່ງ Slip"><img src="${r.PhotoURL}" alt="slip" loading="lazy"></button>`;
+  }
+  return `<span class="slip-thumb-btn empty" style="cursor:default;"><i class="fas fa-image"></i></span>`;
+}
+
+// ============================================================
+// TX CARD + TABLE RENDERERS
+// ============================================================
+function renderTxCards(data, mini=false) {
+  if(!data||!data.length) return '';
+  return `<div class="tx-card-list">${data.map(r=>{
+    const dispAmt = fmtCur(r.AmountLAK||0);
+    return `<div class="tx-card">
+      <div class="tx-card-icon ${r.Type}"><i class="fas fa-${r.Type==='income'?'arrow-down':'arrow-up'}"></i></div>
+      <div class="tx-card-body">
+        <div class="tx-card-desc">${r.Description||'-'}</div>
+        <div class="tx-card-meta">${formatDate(r.Date)} · ${r.Category||'-'}</div>
+      </div>
+      <div class="tx-card-right">
+        <div class="tx-card-amt ${r.Type==='income'?'amount-income':'amount-expense'}">${r.Type==='income'?'+':'-'}${dispAmt}</div>
+        <div class="tx-card-cur">${r.Currency!=='LAK'?`${parseFloat(r.Amount||0).toLocaleString()} ${r.Currency}`:''}</div>
+        <div class="tx-card-actions">
+          ${slipCellHtml(r)}
+          ${mini?'':
+          `<button class="btn btn-sm btn-outline" onclick="editTx('${r.ID}')" style="padding:5px 8px;min-height:30px;"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTx('${r.ID}')" style="padding:5px 8px;min-height:30px;"><i class="fas fa-trash"></i></button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTxTable(data, mini=false) {
+  if(!data||!data.length) return `<div class="empty-state"><i class="fas fa-inbox"></i><p>ບໍ່ມີຂໍ້ມູນ</p></div>`;
+  return `<table>
+    <thead><tr><th>ວັນທີ</th><th>ລາຍລະອຽດ</th><th>ໝວດ</th><th>ປະເພດ</th>
+      <th>${STATE.displayCurrency}</th><th>ຕົ້ນ</th><th>Slip</th>
+      ${mini?'':'<th>ໝາຍເຫດ</th><th>ຈັດການ</th>'}
+    </tr></thead>
+    <tbody>${data.map(r=>{
+      const dispAmt = fmtCur(r.AmountLAK||0);
+      return `<tr>
+        <td style="white-space:nowrap">${formatDate(r.Date)}</td><td>${r.Description||'-'}</td><td>${r.Category||'-'}</td>
+        <td><span class="badge badge-${r.Type}">${r.Type==='income'?'↓ ລາຍຮັບ':'↑ ລາຍຈ່າຍ'}</span></td>
+        <td class="amount-${r.Type}">${r.Type==='income'?'+':'-'}${dispAmt}</td>
+        <td style="color:var(--text3);font-size:11px;">${r.Currency!=='LAK'?`${parseFloat(r.Amount||0).toLocaleString()} ${r.Currency}`:'-'}</td>
+        <td>${slipCellHtml(r)}</td>
+        ${mini?'':
+        `<td style="font-size:11px;color:var(--text3)">${r.Note||'-'}</td>
+        <td><div class="action-btns">
+          <button class="btn btn-sm btn-outline" onclick="editTx('${r.ID}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTx('${r.ID}')"><i class="fas fa-trash"></i></button>
+        </div></td>`}
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ============================================================
+// TRANSACTIONS PAGE
+// ============================================================
+function renderTransactions(el, typeFilter) {
+  let data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  if(typeFilter) data = data.filter(r=>r.Type===typeFilter);
+  data = data.slice().sort((a,b) => new Date(b.Date) - new Date(a.Date) || String(b.ID).localeCompare(String(a.ID)));
+  const ti = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const te = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+  el.innerHTML=`<div class="page">
+    <div class="filter-bar">
+      <div class="year-tabs" style="margin:0;flex-wrap:nowrap;">
+        ${STATE.availableYears.map(y=>`<button class="year-tab ${y===STATE.selectedYear?'active':''}" onclick="doSelectYear(${y},()=>navigate('${STATE.page}'))">${y}</button>`).join('')}
+      </div>
+    </div>
+    <div class="filter-bar">
+      <select class="filter-select" id="filterMonth" onchange="applyTxFilter()" style="flex:1;max-width:150px;">
+        <option value="">ທຸກເດືອນ</option>
+        ${MONTH_NAMES.slice(1).map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}
+      </select>
+      <input class="filter-input" type="text" id="filterSearch" placeholder="ຄົ້ນຫາ..." oninput="applyTxFilter()" style="flex:1;min-width:100px;">
+      <button class="btn btn-primary btn-sm" onclick="openAddModal('${typeFilter||''}')"><i class="fas fa-plus"></i></button>
+    </div>
+    ${curInfoBarHtml()}
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="font-size:13px;color:var(--income);font-weight:700;">${fmtCur(ti,'+')}</span>
+      <span style="font-size:13px;color:var(--expense);font-weight:700;">${fmtCur(te,'-')}</span>
+      <span style="font-size:12px;color:var(--text3);">${data.length} ລາຍການ</span>
+    </div>
+    <div class="table-wrap">
+      <div id="txMobileList">${renderTxCards(data)}</div>
+      <div class="table-scroll" id="txTableBody">${renderTxTable(data)}</div>
+    </div>
+  </div>`;
+}
+
+function applyTxFilter() {
+  const month  = document.getElementById('filterMonth')?.value;
+  const search = (document.getElementById('filterSearch')?.value||'').toLowerCase();
+  let data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  if(STATE.page==='income')  data=data.filter(r=>r.Type==='income');
+  if(STATE.page==='expense') data=data.filter(r=>r.Type==='expense');
+  if(month)  data=data.filter(r=>r.Month===parseInt(month));
+  if(search) data=data.filter(r=>(r.Description||'').toLowerCase().includes(search)||(r.Category||'').toLowerCase().includes(search));
+  data = data.slice().sort((a,b) => new Date(b.Date) - new Date(a.Date) || String(b.ID).localeCompare(String(a.ID)));
+  const ml=document.getElementById('txMobileList'), tl=document.getElementById('txTableBody');
+  if(ml) ml.innerHTML=renderTxCards(data);
+  if(tl) tl.innerHTML=renderTxTable(data);
+}
+
+// ============================================================
+// DAILY REPORT
+// ============================================================
+function renderDaily(el) {
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML=`<div class="page">
+    <div class="filter-bar">
+      <input type="date" class="filter-input" id="dailyDate" value="${today}" onchange="loadDailyReport()" style="flex:1;">
+      <button class="btn btn-primary" onclick="loadDailyReport()"><i class="fas fa-search"></i></button>
+    </div>
+    ${curInfoBarHtml()}
+    <div id="dailyResult"><div class="loading"><div class="spinner"></div></div></div>
+  </div>`;
+  loadDailyReport();
+}
+function loadDailyReport() {
+  const date = document.getElementById('dailyDate')?.value; if(!date) return;
+  const [y,m,d] = date.split('-');
+  const data = STATE.allTx.filter(r=>{ if(r.Year!==parseInt(y)||r.Month!==parseInt(m)) return false; return new Date(r.Date).getDate()===parseInt(d); });
+  const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+  document.getElementById('dailyResult').innerHTML=`
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+        <div class="stat-label">ລາຍຮັບ</div><div class="stat-value" style="color:var(--income)">${fmtCur(inc,'+')}</div></div>
+      <div class="stat-card expense"><div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+        <div class="stat-label">ລາຍຈ່າຍ</div><div class="stat-value" style="color:var(--expense)">${fmtCur(exp,'-')}</div></div>
+      <div class="stat-card profit" style="grid-column:span 2;">
+        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-label">ຍອດຄົງເຫລືອ</div>
+        <div class="stat-value" style="color:${inc-exp>=0?'var(--income)':'var(--expense)'}">
+          ${fmtCur(Math.abs(inc-exp),inc-exp>=0?'+':'-')}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><div style="font-weight:700;font-size:13px;">ວັນທີ ${date}</div></div>
+      ${renderTxCards(data)}<div class="table-scroll">${renderTxTable(data)}</div>
+    </div>`;
+}
+
+// ============================================================
+// MONTHLY REPORT
+// ============================================================
+function renderMonthly(el) {
+  if(!STATE.selectedMonth) STATE.selectedMonth=new Date().getMonth()+1;
+  el.innerHTML=`<div class="page">
+    <div class="year-tabs">
+      ${STATE.availableYears.map(y=>`<button class="year-tab ${y===STATE.selectedYear?'active':''}" onclick="doSelectYear(${y},()=>renderMonthly(document.getElementById('mainContent')))">${y}</button>`).join('')}
+    </div>
+    ${curInfoBarHtml()}
+    <div class="month-tabs" id="monthTabsRow">
+      ${MONTH_NAMES.slice(1).map((n,i)=>`<button class="month-tab ${STATE.selectedMonth===i+1?'active':''}" onclick="selectMonthReport(${i+1})">${n}</button>`).join('')}
+    </div>
+    <div id="monthlyContent">${renderMonthContent(STATE.selectedMonth)}</div>
+  </div>`;
+  setTimeout(()=>{ const a=document.querySelector('.month-tab.active'); if(a) a.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); },100);
+}
+function selectMonthReport(m) {
+  STATE.selectedMonth=m;
+  document.querySelectorAll('.month-tab').forEach((b,i)=>b.classList.toggle('active',i+1===m));
+  document.getElementById('monthlyContent').innerHTML=renderMonthContent(m);
+}
+function renderMonthContent(m) {
+  const data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m);
+  const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+  const net = inc-exp;
+  return `
+    <div class="stat-grid" style="margin-bottom:12px;">
+      <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+        <div class="stat-label">ລາຍຮັບ</div><div class="stat-value" style="color:var(--income)">${fmtCur(inc,'+')}</div></div>
+      <div class="stat-card expense"><div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+        <div class="stat-label">ລາຍຈ່າຍ</div><div class="stat-value" style="color:var(--expense)">${fmtCur(exp,'-')}</div></div>
+      <div class="stat-card profit"><div class="stat-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-label">ຍອດ</div>
+        <div class="stat-value" style="color:${net>=0?'var(--income)':'var(--expense)'}">
+          ${fmtCur(Math.abs(net),net>=0?'+':'-')}</div></div>
+      <div class="stat-card count"><div class="stat-icon"><i class="fas fa-receipt"></i></div>
+        <div class="stat-label">ຈຳນວນ</div><div class="stat-value" style="color:var(--accent3)">${data.length}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><div style="font-weight:700;font-size:13px;">ເດືອນ${MONTH_NAMES[m]} ${STATE.selectedYear}</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()"><i class="fas fa-plus"></i></button></div>
+      ${renderTxCards(data)}<div class="table-scroll">${renderTxTable(data)}</div>
+    </div>`;
+}
+
+// ============================================================
+// YEARLY REPORT
+// ============================================================
+function renderYearly(el) {
+  const s = STATE.summary;
+  const rows = Array.from({length:12},(_,i)=>{
+    const m=i+1, md=STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m);
+    const inc=md.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
+    const exp=md.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+    const net=inc-exp;
+    return `<tr><td>${MONTH_NAMES[m]}</td><td class="amount-income">${fmtCur(inc,'+')}</td><td class="amount-expense">${fmtCur(exp,'-')}</td><td style="color:${net>=0?'var(--income)':'var(--expense)'};font-weight:700;">${fmtCur(Math.abs(net),net>=0?'+':'-')}</td><td style="font-size:11px;color:var(--text3);">${md.length}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<div class="page">
+    <div class="year-tabs">
+      ${STATE.availableYears.map(y=>`<button class="year-tab ${y===STATE.selectedYear?'active':''}" onclick="doSelectYear(${y},()=>renderYearly(document.getElementById('mainContent')))">${y}</button>`).join('')}
+    </div>
+    ${curInfoBarHtml()}
+    <div class="stat-grid" style="margin-bottom:14px;">
+      <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+        <div class="stat-label">ລາຍຮັບ ${STATE.selectedYear}</div><div class="stat-value" style="color:var(--income)">${fmtCur(s.totalIncome||0,'+')}</div></div>
+      <div class="stat-card expense"><div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+        <div class="stat-label">ລາຍຈ່າຍ ${STATE.selectedYear}</div><div class="stat-value" style="color:var(--expense)">${fmtCur(s.totalExpense||0,'-')}</div></div>
+      <div class="stat-card profit"><div class="stat-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-label">ກຳໄລ/ຂາດທຶນ</div>
+        <div class="stat-value" style="color:${(s.netProfit||0)>=0?'var(--income)':'var(--expense)'}">
+          ${fmtCur(Math.abs(s.netProfit||0),(s.netProfit||0)>=0?'+':'-')}</div></div>
+      <div class="stat-card count"><div class="stat-icon"><i class="fas fa-receipt"></i></div>
+        <div class="stat-label">ທັງໝົດ</div><div class="stat-value" style="color:var(--accent3)">${s.count||0}</div></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><div style="font-weight:700;font-size:13px;">ສະຫລຸບ ປີ ${STATE.selectedYear} · ${STATE.displayCurrency}</div></div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>ເດືອນ</th><th>ລາຍຮັບ</th><th>ລາຍຈ່າຍ</th><th>ຍອດ</th><th>ຈຳນວນ</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// SOURCE PAGE
+// ============================================================
+async function renderSource(el) {
+  el.innerHTML=`<div class="loading"><div class="spinner"></div></div>`;
+  const srcRes = await gasCall('getExternalSources').catch(()=>({success:true,data:[]}));
+  STATE.externalSources = srcRes.data||[];
+  const srcCards = STATE.externalSources.map(s=>`
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;color:var(--text);">${s.name||'Sheet'}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;word-break:break-all;">${s.sheetId||''}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="doImportSource('${s.id}')"><i class="fas fa-file-import"></i></button>
+        <a href="https://docs.google.com/spreadsheets/d/${extractSheetId(s.sheetId)}/edit" target="_blank" class="btn btn-sm btn-outline"><i class="fas fa-external-link-alt"></i></a>
+        <button class="btn btn-sm btn-danger" onclick="deleteSource('${s.id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+  el.innerHTML=`<div class="page">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="openExtModal()"><i class="fas fa-plus"></i> ເພີ່ມ</button>
+      <button class="btn btn-success btn-sm" onclick="doImportAll()"><i class="fas fa-file-import"></i> Import</button>
+      <button class="btn btn-warning btn-sm" onclick="setupRealtimeTrigger()"><i class="fas fa-sync"></i> Trigger</button>
+    </div>
+    <div style="margin-bottom:14px;">${srcCards||'<div class="empty-state"><i class="fas fa-table"></i><p>ຍັງບໍ່ມີ Sheet</p></div>'}</div>
+    <div class="chart-card" style="margin-bottom:10px;">
+      <div class="chart-header">
+        <div class="chart-title"><i class="fas fa-table" style="color:var(--primary);margin-right:6px;"></i>Sheet ຕົ້ນທາງ</div>
+        <a href="https://docs.google.com/spreadsheets/d/${SOURCE_SHEET}/edit" target="_blank" class="btn btn-sm btn-outline">ເປີດ</a>
+      </div>
+      <div class="source-embed"><iframe src="https://docs.google.com/spreadsheets/d/${SOURCE_SHEET}/edit?usp=sharing&rm=minimal" allowfullscreen></iframe></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title"><i class="fas fa-database" style="color:var(--accent2);margin-right:6px;"></i>Sheet ບັນທຶກ</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="rt-badge"><span class="rt-dot"></span>Live</div>
+          <a href="https://docs.google.com/spreadsheets/d/${DATA_SHEET}/edit" target="_blank" class="btn btn-sm btn-outline">ເປີດ</a>
+        </div>
+      </div>
+      <div class="source-embed"><iframe src="https://docs.google.com/spreadsheets/d/${DATA_SHEET}/edit?usp=sharing&rm=minimal" allowfullscreen></iframe></div>
+    </div>
+  </div>`;
+}
+
+function extractSheetId(urlOrId) { if(!urlOrId) return ''; const m=urlOrId.match(/\/d\/([a-zA-Z0-9-_]+)/); return m?m[1]:urlOrId; }
+async function setupRealtimeTrigger() { showToast('ກຳລັງຕັ້ງ Trigger...','info'); const r=await gasCall('setupRealtimeTrigger').catch(e=>({success:false,error:String(e)})); if(r.success) showToast('Realtime Trigger ຕັ້ງໄວ້ແລ້ວ! ✅','success'); else showToast('ຜິດພາດ: '+r.error,'error'); }
+async function doImportSource(id) { showToast('ກຳລັງ Import...','info'); const r=await gasCall('importFromExternalSource',id).catch(e=>({success:false,error:String(e)})); if(r.success){showToast(`Import ສຳເລັດ! ${r.imported} ລາຍການ`,'success');await loadAllData();refreshCurrentPage();}else showToast('ຜິດພາດ: '+r.error,'error'); }
+async function doImportAll() { showToast('ກຳລັງ Import...','info'); let total=0; for(const src of STATE.externalSources){ const r=await gasCall('importFromExternalSource',src.id).catch(()=>({success:false})); if(r.success) total+=r.imported||0; } showToast(`Import ສຳເລັດ! ${total} ລາຍການ`,'success'); await loadAllData(); refreshCurrentPage(); }
+async function deleteSource(id) { if(!confirm('ລຶບ Source ນີ້?')) return; const r=await gasCall('deleteExternalSource',id); if(r.success){showToast('ລຶບສຳເລັດ','success');renderSource(document.getElementById('mainContent'));}else showToast('ຜິດພາດ: '+r.error,'error'); }
+function openExtModal() { document.getElementById('extModal').classList.add('open'); }
+function closeExtModal() { document.getElementById('extModal').classList.remove('open'); }
+async function saveExtSource() {
+  const name=document.getElementById('extName').value.trim(), sheetId=document.getElementById('extSheetId').value.trim(), desc=document.getElementById('extDesc').value.trim();
+  if(!name||!sheetId){showToast('ໃສ່ຊື່ ແລະ Sheet ID','error');return;}
+  const cleanId=extractSheetId(sheetId)||sheetId;
+  const r=await gasCall('addExternalSource',{name,sheetId:cleanId,description:desc});
+  if(r.success){showToast('ເພີ່ມສຳເລັດ','success');closeExtModal();renderSource(document.getElementById('mainContent'));}
+  else showToast('ຜິດພາດ: '+r.error,'error');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function renderSettings(el) {
+  const s = STATE.settings;
+  const [adminRes,sessRes] = await Promise.all([gasCall('getAdmins'),gasCall('getActiveSessions')]);
+  STATE.admins=adminRes.data||[]; STATE.activeSessions=sessRes.data||[];
+  const adminRows = STATE.admins.map(a=>`
+    <tr><td><strong>${a.username}</strong></td><td>${a.displayName||'-'}</td>
+      <td><span class="badge ${a.role==='admin'?'badge-income':'badge-expense'}">${a.role}</span></td>
+      <td>${String(a.active).toLowerCase()==='true'?'<span style="color:var(--income)">●</span>':'<span style="color:var(--text3)">●</span>'}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-outline" onclick="openEditAdmin('${a.username}')"><i class="fas fa-edit"></i></button>
+        ${a.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="doDeleteAdmin('${a.username}')"><i class="fas fa-trash"></i></button>`:''}
+      </div></td></tr>`).join('');
+  el.innerHTML=`<div class="page">
+    <div class="settings-section">
+      <div class="settings-section-title"><i class="fas fa-sliders-h"></i> ຕັ້ງຄ່າລະບົບ</div>
+      <div class="form-group-modal"><label>ຊື່ລະບົບ</label><input type="text" id="setAppName" value="${s.appName||'EMO Finance'}"></div>
+      <div class="form-group-modal"><label>ໂລໂກ້ URL</label><input type="url" id="setLogoUrl" value="${s.logoUrl||''}" placeholder="https://...">
+        ${s.logoUrl?`<div style="margin-top:8px;"><img src="${s.logoUrl}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:2px solid var(--border);" onerror="this.style.display='none'"></div>`:''}
+      </div>
+      <hr class="divider">
+      <div class="settings-section-title" style="margin-bottom:10px;"><i class="fas fa-plug"></i> ກວດສອບການເຊື່ອມຕໍ່</div>
+      <button class="btn btn-outline" onclick="testDriveConnection()" style="width:100%;">
+        <i class="fas fa-google-drive"></i> ທົດສອບເຊື່ອມຕໍ່ Google Drive
+      </button>
+      <div class="settings-section-title" style="margin-bottom:10px;"><i class="fas fa-exchange-alt"></i> ອັດຕາແລກປ່ຽນ</div>
+      <div class="form-row">
+        <div class="form-group-modal"><label>THB → LAK</label><input type="number" id="setExRateTHB" value="${s.exchangeRateTHB||'680'}" step="1" inputmode="numeric"></div>
+        <div class="form-group-modal"><label>USD → LAK</label><input type="number" id="setExRateUSD" value="${s.exchangeRateUSD||'21660'}" step="1" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title"><i class="fas fa-fill-drip"></i> ສີ ແລະ ໂຕ</div>
+      <div class="color-row"><label>ສີຫຼັກ</label><input type="color" id="setColor1" value="${s.primaryColor||'#6C63FF'}" oninput="previewColor('primary',this.value)"></div>
+      <div class="color-row"><label>ສີ Accent</label><input type="color" id="setColor2" value="${s.accentColor||'#FF6584'}" oninput="previewColor('accent',this.value)"></div>
+      <div class="color-row">
+        <label>Light Mode</label>
+        <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+          <input type="checkbox" id="setLightMode" ${STATE.lightMode?'checked':''} onchange="toggleTheme()" style="opacity:0;width:0;height:0;position:absolute;">
+          <span style="position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:24px;transition:.3s;">
+            <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;${STATE.lightMode?'transform:translateX(20px)':''}"></span>
+          </span>
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="doSaveSettings()" style="width:100%;margin-top:6px;"><i class="fas fa-save"></i> ບັນທຶກການຕັ້ງຄ່າ</button>
+    </div>
+    <div class="settings-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="settings-section-title" style="margin:0;"><i class="fas fa-users-cog"></i> ຈັດການຜູ້ໃຊ້</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddAdmin()"><i class="fas fa-plus"></i></button>
+      </div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Username</th><th>ຊື່</th><th>ສິດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
+        <tbody>${adminRows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);">ບໍ່ມີ</td></tr>'}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
+async function testDriveConnection() {
+  showToast('ກຳລັງກວດສອບ...','info');
+  const r = await gasCall('checkDriveConnection').catch(e=>({success:false,error:String(e)}));
+  if(r.success) showToast(r.message,'success');
+  else showToast(r.error,'error');
+}
+
+async function doSaveSettings() {
+  const settings = {
+    appName:document.getElementById('setAppName').value,
+    logoUrl:document.getElementById('setLogoUrl').value,
+    primaryColor:document.getElementById('setColor1').value,
+    accentColor:document.getElementById('setColor2').value,
+    exchangeRateTHB:document.getElementById('setExRateTHB').value,
+    exchangeRateUSD:document.getElementById('setExRateUSD').value,
+    darkMode:String(!STATE.lightMode)
+  };
+  const r = await gasCall('saveSettings',settings).catch(e=>({success:false,error:String(e)}));
+  if(r.success){ STATE.settings={...STATE.settings,...settings}; showToast('ບັນທຶກສຳເລັດ ✅','success'); }
+  else showToast('ຜິດພາດ: '+r.error,'error');
+}
+
+function applySettings() {
+  const s = STATE.settings;
+  if(s.primaryColor){ document.documentElement.style.setProperty('--primary',s.primaryColor); document.documentElement.style.setProperty('--primary-dark',s.primaryColor+'CC'); }
+  if(s.accentColor) document.documentElement.style.setProperty('--accent',s.accentColor);
+  const name = s.appName||'EMO Finance';
+  ['sidebarName','loginAppName'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=name; });
+  document.title = name;
+  if(s.darkMode !== undefined) {
+    const isDark = String(s.darkMode).toLowerCase()==='true';
+    const isLight = !isDark;
+    if(STATE.lightMode !== isLight) {
+      STATE.lightMode = isLight;
+      document.documentElement.setAttribute('data-light',String(isLight));
+      const themeBtn = document.getElementById('themeBtn');
+      if(themeBtn) themeBtn.innerHTML = isLight ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+  }
+  if(s.logoUrl && String(s.logoUrl).trim()!=='') applyLogo(s.logoUrl);
+
+  // ✅ ບັນທຶກ theme ໄວ້ໃນ browser ເພື່ອໃຫ້ຄັ້ງໜ້າເປີດຫນ້າ ບໍ່ຕິດສີດຳ
+  try{
+    localStorage.setItem('emo_theme_cache', JSON.stringify({
+      primaryColor: s.primaryColor, accentColor: s.accentColor, darkMode: s.darkMode
+    }));
+  }catch(e){}
+}
+
+function previewColor(type,val) {
+  if(type==='primary'){ document.documentElement.style.setProperty('--primary',val); document.documentElement.style.setProperty('--primary-dark',val); }
+  if(type==='accent')  document.documentElement.style.setProperty('--accent',val);
+}
+function toggleTheme() {
+  STATE.lightMode = !STATE.lightMode;
+  document.documentElement.setAttribute('data-light',STATE.lightMode);
+  document.getElementById('themeBtn').innerHTML = STATE.lightMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  const darkModeVal = String(!STATE.lightMode);
+  gasCall('saveSettings',{darkMode:darkModeVal}).catch(()=>{});
+  STATE.settings.darkMode = darkModeVal;
+}
+
+function openAddAdmin() { STATE.editAdmin=null; document.getElementById('adminModalTitle').textContent='ເພີ່ມຜູ້ໃຊ້'; ['adminUsername','adminPassword','adminDisplayName'].forEach(id=>document.getElementById(id).value=''); document.getElementById('adminModal').classList.add('open'); }
+function openEditAdmin(u) { STATE.editAdmin=u; document.getElementById('adminModalTitle').textContent='ແກ້ໄຂ: '+u; const a=STATE.admins.find(x=>x.username===u); document.getElementById('adminUsername').value=u; document.getElementById('adminDisplayName').value=a?.displayName||''; document.getElementById('adminPassword').value=''; document.getElementById('adminRole').value=a?.role||'admin'; document.getElementById('adminModal').classList.add('open'); }
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('open'); }
+async function saveAdmin() {
+  const username=document.getElementById('adminUsername').value.trim(), password=document.getElementById('adminPassword').value, displayName=document.getElementById('adminDisplayName').value.trim(), role=document.getElementById('adminRole').value;
+  if(!username){showToast('ໃສ່ username','error');return;}
+  let r;
+  if(STATE.editAdmin) r=await gasCall('updateAdmin',STATE.editAdmin,{password:password||undefined,displayName,role});
+  else { if(!password){showToast('ໃສ່ລະຫັດຜ່ານ','error');return;} r=await gasCall('addAdmin',{username,password,displayName,role}); }
+  if(r.success){showToast('ສຳເລັດ','success');closeAdminModal();renderSettings(document.getElementById('mainContent'));}
+  else showToast('ຜິດພາດ: '+r.error,'error');
+}
+async function doDeleteAdmin(username) { if(!confirm(`ລຶບ '${username}'?`)) return; const r=await gasCall('deleteAdmin',username); if(r.success){showToast('ລຶບສຳເລັດ','success');renderSettings(document.getElementById('mainContent'));}else showToast('ຜິດພາດ: '+r.error,'error'); }
+
+// ============================================================
+// TX MODAL
+// ============================================================
+function openAddModal(type='') { STATE.editId=null; document.getElementById('modalTitle').textContent='ເພີ່ມລາຍການໃໝ່'; resetForm(); if(type) setType(type); document.getElementById('txDate').value=new Date().toISOString().split('T')[0]; document.getElementById('txModal').classList.add('open'); }
+function closeModal()    { document.getElementById('txModal').classList.remove('open'); }
+function closeDelModal() { document.getElementById('delModal').classList.remove('open'); }
+
+function resetForm() {
+  ['txDate','txDesc','txAmount','txNote','txExRate','txAmtLAK'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('txCurrency').value='LAK';
+  document.getElementById('exRateGroup').style.display='none';
+  removeSlip();
+  setType('income'); loadCategories();
+}
+function setType(type) { STATE.currentType=type; document.getElementById('typeIncome').classList.toggle('active',type==='income'); document.getElementById('typeExpense').classList.toggle('active',type==='expense'); loadCategories(); }
+function loadCategories() { const cats=STATE.currentType==='income'?(STATE.categories.income||[]):(STATE.categories.expense||[]); document.getElementById('txCategory').innerHTML=cats.map(c=>`<option>${c}</option>`).join(''); }
+function onCurrencyChange() {
+  const cur = document.getElementById('txCurrency').value;
+  document.getElementById('exRateGroup').style.display = cur==='LAK'?'none':'block';
+  if(cur==='THB') document.getElementById('txExRate').value=STATE.settings.exchangeRateTHB||'680';
+  if(cur==='USD') document.getElementById('txExRate').value=STATE.settings.exchangeRateUSD||'21660';
+  if(cur==='LAK') document.getElementById('txExRate').value='1';
+  updateLAKPreview();
+}
+function updateLAKPreview() {
+  const amt=parseFloat(document.getElementById('txAmount').value)||0, rate=parseFloat(document.getElementById('txExRate').value)||1, cur=document.getElementById('txCurrency').value;
+  document.getElementById('txAmtLAK').value = Math.round(cur!=='LAK'?amt*rate:amt).toLocaleString()+' ₭';
+}
+document.getElementById('txAmount').addEventListener('input',updateLAKPreview);
+document.getElementById('txExRate').addEventListener('input',updateLAKPreview);
+
+async function saveTx() {
+  const d = { date:document.getElementById('txDate').value, type:STATE.currentType, category:document.getElementById('txCategory').value, description:document.getElementById('txDesc').value, amount:document.getElementById('txAmount').value, currency:document.getElementById('txCurrency').value, exchangeRate:document.getElementById('txExRate').value||'1', note:document.getElementById('txNote').value, photoUrl:document.getElementById('txPhotoUrl').value||'' };
+  if(!d.date||!d.amount||parseFloat(d.amount)<=0){showToast('ໃສ່ຂໍ້ມູນໃຫ້ຄົບ','error');return;}
+  const btn=document.getElementById('saveTxBtn');
+  btn.innerHTML='<div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div>'; btn.disabled=true;
+  try {
+    // ✅ ຖ້າມີການເລືອກຮູບ Slip ໃໝ່ ໃຫ້ອັບໂຫລດຂຶ້ນ Google Drive ກ່ອນ ແລ້ວເອົາລິ້ງມາໃສ່ໃນ photoUrl
+    if (slipBase64) {
+      showToast('ກຳລັງອັບໂຫລດ Slip...','info');
+      const upRes = await gasCallEx('uploadSlip', [slipBase64, slipFileName, slipMimeType], 45000);
+      if (upRes.success) { d.photoUrl = upRes.url; }
+      else { showToast('ອັບໂຫລດ Slip ບໍ່ສຳເລັດ: '+upRes.error,'error'); }
+    }
+    const r = STATE.editId ? await gasCall('updateTransaction',STATE.editId,d) : await gasCall('addTransaction',d);
+    if(r.success){ showToast(STATE.editId?'ແກ້ໄຂສຳເລັດ ✅':'ເພີ່ມສຳເລັດ ✅','success'); closeModal(); await loadAllData(); const yearRes=await gasCall('getAvailableYears'); if(yearRes.success) STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020); refreshCurrentPage(); }
+    else showToast('ຜິດພາດ: '+r.error,'error');
+  } catch(e) { showToast('ຜິດພາດ: '+e,'error'); }
+  btn.innerHTML='<i class="fas fa-save"></i> ບັນທຶກ'; btn.disabled=false;
+}
+function editTx(id) {
+  const tx = STATE.allTx.find(r=>r.ID===id); if(!tx) return;
+  STATE.editId=id; document.getElementById('modalTitle').textContent='ແກ້ໄຂລາຍການ';
+  setType(tx.Type); document.getElementById('txDate').value=(String(tx.Date||'')).split('T')[0]; document.getElementById('txDesc').value=tx.Description||''; document.getElementById('txAmount').value=tx.Amount||''; document.getElementById('txCurrency').value=tx.Currency||'LAK'; document.getElementById('txExRate').value=tx.ExchangeRate||1; document.getElementById('txNote').value=tx.Note||'';
+  if(tx.Currency&&tx.Currency!=='LAK'){ document.getElementById('exRateGroup').style.display='block'; updateLAKPreview(); }
+  // ✅ ສະແດງ Slip ເກົ່າ (ຖ້າມີ) ໃນຟອມແກ້ໄຂ
+  removeSlip();
+  if (tx.PhotoURL) {
+    document.getElementById('txPhotoUrl').value = tx.PhotoURL;
+    document.getElementById('slipPreviewImg').src = tx.PhotoURL;
+    document.getElementById('slipPreviewWrap').style.display = 'inline-block';
+    document.getElementById('slipUploadBox').style.display = 'none';
+  }
+  loadCategories();
+  setTimeout(()=>{ document.getElementById('txCategory').value=tx.Category||''; },50);
+  document.getElementById('txModal').classList.add('open');
+}
+function deleteTx(id) { STATE.deleteId=id; document.getElementById('delModal').classList.add('open'); }
+async function confirmDelete() {
+  if(!STATE.deleteId) return;
+  const r = await gasCall('deleteTransaction',STATE.deleteId).catch(e=>({success:false,error:String(e)}));
+  if(r.success){ showToast('ລຶບສຳເລັດ','success'); closeDelModal(); await loadAllData(); refreshCurrentPage(); }
+  else showToast('ຜິດພາດ: '+r.error,'error');
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+async function refreshData() {
+  setSyncStatus('loading','ໂຫລດ...');
+  await loadAllData();
+  const yearRes = await gasCall('getAvailableYears').catch(()=>({success:false}));
+  if(yearRes.success) STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020);
+  refreshCurrentPage();
+  showToast('ໂຫລດໃໝ່ ✅','success');
+}
+function setSyncStatus(status,msg) {
+  const txt=document.getElementById('syncStatus');
+  if(txt&&msg) txt.textContent=msg;
+}
+function showToast(msg,type='info') {
+  const c=document.getElementById('toastContainer'), t=document.createElement('div');
+  const icons={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="fas ${icons[type]||icons.info}" style="color:${type==='success'?'var(--income)':type==='error'?'var(--accent)':'var(--profit)'}"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(40px)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); },3200);
+}
+function formatDate(d) {
+  if(!d) return '-';
+  const dt = d instanceof Date ? d : new Date(d);
+  if(isNaN(dt)) return String(d);
+  return `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`;
+}
+
+// ============================================================
+// RESIZE + GESTURES
+// ============================================================
+window.addEventListener('resize',()=>{ updateCurrencyToggleLabels(); if(STATE.page==='dashboard') setTimeout(()=>{drawBarChart();drawDoughnutChart();},100); });
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{ overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('open'); }); });
+let touchStartX=0;
+document.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const sidebar=document.getElementById('sidebar');
+  if(sidebar.classList.contains('open')&&dx<-60) closeSidebar();
+  if(!sidebar.classList.contains('open')&&touchStartX<30&&dx>60) openSidebar();
+},{passive:true});
+
+// ============================================================
+// PRE-LOAD SETTINGS ON LOGIN SCREEN
+// ============================================================
+(async function preloadSettings(){
+  try {
+    const r = await gasCall('getSettings');
+    if(r.success && r.settings) {
+      STATE.settings={...STATE.settings,...r.settings};
+      if(r.settings.appName){ const n=document.getElementById('loginAppName'); if(n) n.textContent=r.settings.appName; document.title=r.settings.appName; }
+      if(r.settings.logoUrl && String(r.settings.logoUrl).trim()!==''){
+        const emoji=document.getElementById('loginLogoEmoji'), img=document.getElementById('loginLogoImg');
+        if(emoji) emoji.style.display='none';
+        if(img){ img.src=r.settings.logoUrl; img.style.display='block'; }
+      }
+    }
+  } catch(_){}
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
