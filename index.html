@@ -800,13 +800,43 @@ let slipBase64 = null, slipFileName = null, slipMimeType = null;
 
 function previewSlip(input) {
   const file = input.files[0]; if(!file) return;
-  slipFileName = file.name; slipMimeType = file.type || 'image/jpeg';
+  slipFileName = file.name;
   const reader = new FileReader();
   reader.onload = e => {
-    slipBase64 = e.target.result;
-    document.getElementById('slipPreviewImg').src = slipBase64;
-    document.getElementById('slipPreviewWrap').style.display = 'inline-block';
-    document.getElementById('slipUploadBox').style.display = 'none';
+    // ✅ ຫຍໍ້ຂະໜາດຮູບ + ບີບອັດກ່ອນສົ່ງ ເພື່ອໃຫ້ອັບໂຫລດໄວ ແລະ ບໍ່ຕິດ timeout
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const maxDim = 1600;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const scale = maxDim / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        slipMimeType = 'image/jpeg';
+        slipBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      } catch (compressErr) {
+        // ✅ ຖ້າບີບອັດບໍ່ໄດ້ (ເຊັ່ນ canvas error) ໃຫ້ໃຊ້ຮູບຕົ້ນສະບັບແທນ
+        slipMimeType = file.type || 'image/jpeg';
+        slipBase64 = e.target.result;
+      }
+      document.getElementById('slipPreviewImg').src = slipBase64;
+      document.getElementById('slipPreviewWrap').style.display = 'inline-block';
+      document.getElementById('slipUploadBox').style.display = 'none';
+    };
+    img.onerror = () => {
+      slipMimeType = file.type || 'image/jpeg';
+      slipBase64 = e.target.result;
+      document.getElementById('slipPreviewImg').src = slipBase64;
+      document.getElementById('slipPreviewWrap').style.display = 'inline-block';
+      document.getElementById('slipUploadBox').style.display = 'none';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -816,6 +846,32 @@ function removeSlip() {
   document.getElementById('txPhotoUrl').value = '';
   document.getElementById('slipPreviewWrap').style.display = 'none';
   document.getElementById('slipUploadBox').style.display = 'block';
+}
+
+// ============================================================
+// 🖼️ DRIVE IMAGE URL HELPERS
+// ============================================================
+// ✅ ດຶງ Google Drive File ID ອອກຈາກ URL ຮູບແບບໃດກໍ່ໄດ້ (uc?export=view, thumbnail, /file/d/.../view)
+function driveFileId(url) {
+  if (!url) return '';
+  const s = String(url);
+  let m = s.match(/[?&]id=([-\w]{15,})/);
+  if (m) return m[1];
+  m = s.match(/\/d\/([-\w]{15,})/);
+  if (m) return m[1];
+  return '';
+}
+// ✅ ສ້າງ link thumbnail ທີ່ສະແດງຜົນເປັນຮູບພາບພາຍໃນ <img> ໄດ້ໜັກແໜ້ນ (ໃຊ້ໄດ້ທັງຂະໜາດນ້ອຍ ແລະ ໃຫຍ່)
+function driveThumb(url, size) {
+  const id = driveFileId(url);
+  if (!id) return url || '';
+  return `https://drive.google.com/thumbnail?id=${id}&sz=w${size || 200}`;
+}
+// ✅ ລິ້ງເປີດເບິ່ງຮູບເຕັມໃນແທັບໃໝ່ (ໜ້າ Drive viewer ປົກກະຕິ)
+function driveViewLink(url) {
+  const id = driveFileId(url);
+  if (!id) return url || '#';
+  return `https://drive.google.com/file/d/${id}/view`;
 }
 
 // ============================================================
@@ -1244,7 +1300,7 @@ function viewSlip(id) {
   if(!tx || !tx.PhotoURL) { showToast('ລາຍການນີ້ບໍ່ມີ Slip','info'); return; }
   document.getElementById('slipModalBody').innerHTML = `
     <div style="text-align:center;margin-bottom:14px;">
-      <img src="${tx.PhotoURL}" alt="slip" style="max-width:100%;max-height:340px;border-radius:12px;border:1px solid var(--border);object-fit:contain;">
+      <img src="${driveThumb(tx.PhotoURL,1000)}" alt="slip" style="max-width:100%;max-height:340px;border-radius:12px;border:1px solid var(--border);object-fit:contain;" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<div style=\\'color:var(--text3);font-size:12px;padding:20px;\\'>ບໍ່ສາມາດໂຫລດຮູບ Slip ໄດ້</div>')">
     </div>
     <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px 14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1268,7 +1324,7 @@ function viewSlip(id) {
         <span class="amount-${tx.Type}" style="font-size:15px;">${tx.Type==='income'?'+':'-'}${fmtCur(tx.AmountLAK||0)}</span>
       </div>
     </div>
-    <a href="${tx.PhotoURL}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px;"><i class="fas fa-external-link-alt"></i> ເປີດຮູບເຕັມ</a>
+    <a href="${driveViewLink(tx.PhotoURL)}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px;"><i class="fas fa-external-link-alt"></i> ເປີດຮູບເຕັມ</a>
   `;
   document.getElementById('slipModal').classList.add('open');
 }
@@ -1276,7 +1332,7 @@ function closeSlipModal() { document.getElementById('slipModal').classList.remov
 
 function slipCellHtml(r) {
   if (r.PhotoURL) {
-    return `<button class="slip-thumb-btn" onclick="viewSlip('${r.ID}')" title="ເບິ່ງ Slip"><img src="${r.PhotoURL}" alt="slip" loading="lazy"></button>`;
+    return `<button class="slip-thumb-btn" onclick="viewSlip('${r.ID}')" title="ເບິ່ງ Slip"><img src="${driveThumb(r.PhotoURL,150)}" alt="slip" loading="lazy" onerror="this.parentElement.classList.add('empty');this.parentElement.innerHTML='<i class=\\'fas fa-image\\'></i>'"></button>`;
   }
   return `<span class="slip-thumb-btn empty" style="cursor:default;"><i class="fas fa-image"></i></span>`;
 }
@@ -1754,9 +1810,12 @@ async function saveTx() {
     // ✅ ຖ້າມີການເລືອກຮູບ Slip ໃໝ່ ໃຫ້ອັບໂຫລດຂຶ້ນ Google Drive ກ່ອນ ແລ້ວເອົາລິ້ງມາໃສ່ໃນ photoUrl
     if (slipBase64) {
       showToast('ກຳລັງອັບໂຫລດ Slip...','info');
-      const upRes = await gasCallEx('uploadSlip', [slipBase64, slipFileName, slipMimeType], 45000);
-      if (upRes.success) { d.photoUrl = upRes.url; }
-      else { showToast('ອັບໂຫລດ Slip ບໍ່ສຳເລັດ: '+upRes.error,'error'); }
+      const upRes = await gasCallEx('uploadSlip', [slipBase64, slipFileName, slipMimeType], 55000);
+      if (upRes.success) {
+        d.photoUrl = upRes.url;
+      } else {
+        showToast('ອັບໂຫລດ Slip ບໍ່ສຳເລັດ: '+upRes.error,'error');
+      }
     }
     const r = STATE.editId ? await gasCall('updateTransaction',STATE.editId,d) : await gasCall('addTransaction',d);
     if(r.success){ showToast(STATE.editId?'ແກ້ໄຂສຳເລັດ ✅':'ເພີ່ມສຳເລັດ ✅','success'); closeModal(); await loadAllData(); const yearRes=await gasCall('getAvailableYears'); if(yearRes.success) STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020); refreshCurrentPage(); }
@@ -1773,7 +1832,7 @@ function editTx(id) {
   removeSlip();
   if (tx.PhotoURL) {
     document.getElementById('txPhotoUrl').value = tx.PhotoURL;
-    document.getElementById('slipPreviewImg').src = tx.PhotoURL;
+    document.getElementById('slipPreviewImg').src = driveThumb(tx.PhotoURL, 300);
     document.getElementById('slipPreviewWrap').style.display = 'inline-block';
     document.getElementById('slipUploadBox').style.display = 'none';
   }
