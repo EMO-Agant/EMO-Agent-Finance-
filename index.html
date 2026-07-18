@@ -527,6 +527,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
           <div class="topbar-sync" id="topSyncWrap">
             <span id="syncStatus" style="white-space:nowrap;font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;">ເຊື່ອມຕໍ່</span>
           </div>
+          <button class="icon-btn" onclick="refreshData()" id="manualSyncBtn" title="ອັບເດດຂໍ້ມູນ"><i class="fas fa-sync-alt"></i></button>
           <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
         </div>
       </header>
@@ -1015,7 +1016,7 @@ async function initApp() {
     await loadAllData();
     refreshCurrentPage();
     setSyncStatus('ok','ເຊື່ອມຕໍ່');
-    startRealtimeSync();
+    // startRealtimeSync(); // ❌ ປິດການອັບເດດອັດຕະໂນມັດທຸກ 15 ວິນາທີ (ປ່ຽນເປັນປຸ່ມກົດເອງແທນ)
     startSessionWatcher();
   } catch(e) {
     setSyncStatus('error','ຜິດພາດ');
