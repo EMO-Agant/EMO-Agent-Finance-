@@ -357,6 +357,27 @@ tbody td{padding:10px 10px;font-size:12px;color:var(--text2);}
 .color-row input[type=color]{width:44px;height:34px;padding:2px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;-webkit-appearance:none;}
 hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
+/* EXPENSES ANALYTICS DONUT CARD */
+.exp-analytics-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.exp-analytics-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.exp-analytics-title{font-size:13px;font-weight:700;color:var(--text);}
+.exp-analytics-body{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.exp-donut-wrap{position:relative;width:170px;height:170px;flex-shrink:0;margin:0 auto;}
+.exp-donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
+.exp-donut-total{font-size:16px;font-weight:800;color:var(--text);}
+.exp-donut-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.exp-legend{flex:1;min-width:160px;display:flex;flex-direction:column;gap:10px;}
+.exp-legend-item{display:flex;align-items:center;gap:9px;}
+.exp-legend-dot{width:8px;height:26px;border-radius:4px;flex-shrink:0;}
+.exp-legend-text{min-width:0;}
+.exp-legend-name{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.exp-legend-amt{font-size:13px;font-weight:700;color:var(--text);}
+.exp-analytics-empty{text-align:center;padding:20px;color:var(--text3);font-size:12px;}
+@media (max-width:420px){
+  .exp-analytics-body{flex-direction:column;}
+  .exp-legend{width:100%;}
+}
+
 /* Toast */
 .toast-container{position:fixed;top:max(12px,calc(var(--safe-top)+8px));right:max(12px,var(--safe-right));z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 24px);}
 .toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:8px;max-width:300px;box-shadow:var(--shadow);animation:slideRight .3s ease;font-size:12px;border-left:4px solid var(--primary);}
@@ -1478,6 +1499,73 @@ function switchCatTab(type) {
   document.getElementById('catTabIncome').classList.toggle('active', type==='income');
 }
 
+// ============================================================
+// EXPENSES ANALYTICS DONUT CARD
+// ============================================================
+function renderExpensesAnalyticsCard(yearData, typeFilter) {
+  const type = typeFilter || 'expense';
+  const items = buildCategoryBreakdown(yearData, type);
+  const total = items.reduce((s,it)=>s+it.amt,0);
+  const label = type==='income' ? 'Income analytics' : 'Expenses analytics';
+
+  if (!items.length) {
+    return `<div class="exp-analytics-card">
+      <div class="exp-analytics-header"><div class="exp-analytics-title">${label}</div></div>
+      <div class="exp-analytics-empty"><i class="fas fa-chart-pie"></i><br>ບໍ່ມີຂໍ້ມູນ</div>
+    </div>`;
+  }
+
+  const legend = items.map((it,i)=>{
+    const color = CAT_COLORS[i % CAT_COLORS.length];
+    return `<div class="exp-legend-item">
+      <span class="exp-legend-dot" style="background:${color}"></span>
+      <div class="exp-legend-text">
+        <div class="exp-legend-name">${it.cat}</div>
+        <div class="exp-legend-amt">${fmtCur(it.amt)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="exp-analytics-card">
+    <div class="exp-analytics-header">
+      <div class="exp-analytics-title"><i class="fas fa-chart-pie" style="color:var(--primary);margin-right:6px;"></i>${label}</div>
+    </div>
+    <div class="exp-analytics-body">
+      <div class="exp-donut-wrap">
+        <canvas id="expAnalyticsChart"></canvas>
+        <div class="exp-donut-center">
+          <div class="exp-donut-total">${fmtCur(total)}</div>
+          <div class="exp-donut-sub">ລວມທັງໝົດ</div>
+        </div>
+      </div>
+      <div class="exp-legend">${legend}</div>
+    </div>
+  </div>`;
+}
+
+function drawExpAnalyticsChart(yearData, typeFilter) {
+  const ctx = document.getElementById('expAnalyticsChart');
+  if(!ctx) return;
+  if(STATE.charts.expAnalytics) STATE.charts.expAnalytics.destroy();
+  const type = typeFilter || 'expense';
+  const items = buildCategoryBreakdown(yearData, type);
+  if(!items.length) return;
+  const colors = items.map((it,i)=>CAT_COLORS[i % CAT_COLORS.length]);
+  STATE.charts.expAnalytics = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:items.map(it=>it.cat),
+      datasets:[{ data:items.map(it=>toDisplay(it.amt)), backgroundColor:colors, borderWidth:0, hoverOffset:8 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'74%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:(c)=>` ${c.label}: ${fmtCur(items[c.dataIndex].amt)}` } }
+      }
+    }
+  });
+}
 
 // ============================================================
 // TRANSACTIONS PAGE
@@ -1504,6 +1592,7 @@ function renderTransactions(el, typeFilter) {
       <button class="btn btn-primary btn-sm" onclick="openAddModal('${typeFilter||''}')"><i class="fas fa-plus"></i></button>
     </div>
     ${curInfoBarHtml()}
+    ${renderExpensesAnalyticsCard(yearData, typeFilter)}
     ${renderCategoryDashboard(yearData, typeFilter)}
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
       <span style="font-size:13px;color:var(--income);font-weight:700;">${fmtCur(ti,'+')}</span>
@@ -1515,6 +1604,7 @@ function renderTransactions(el, typeFilter) {
       <div class="table-scroll" id="txTableBody">${renderTxTable(data)}</div>
     </div>
   </div>`;
+  setTimeout(()=>{ drawExpAnalyticsChart(yearData, typeFilter); }, 80); 
 }
 
 function applyTxFilter() {
