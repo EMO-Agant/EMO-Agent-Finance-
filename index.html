@@ -368,6 +368,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .fab{display:flex;}
   .table-scroll table{display:none;}
   .tx-card-list{display:block;}
+  .yearly-scroll table{display:table;}
   .chart-grid{grid-template-columns:1fr;}
   .chart-card canvas{max-height:190px;}
   .form-row{grid-template-columns:1fr;}
@@ -705,7 +706,7 @@ const AUTH_STORAGE_KEY = 'emo_auth'; // ✅ ກຸນແຈເກັບຂໍ້
 // 🌐 API BRIDGE — fetch ผ่าน POST ไปยัง GAS
 // ============================================================
 async function gasCall(fn, ...args) {
-  return gasCallEx(fn, args, 8000);
+  return gasCallEx(fn, args, 15000);
 }
 
 async function gasCallEx(fn, args, timeoutMs) {
@@ -735,6 +736,11 @@ async function gasCallEx(fn, args, timeoutMs) {
 
   } catch (err) {
     console.warn(`gasCall(${fn}) failed:`, err.message);
+    // ✅ ຟັງຊັນທີ່ກ່ຽວກັບຂໍ້ມູນຈິງ ຫ້າມສົ່ງ demo data ທັບ (ຈະເຮັດໃຫ້ຂໍ້ມູນຫາຍ)
+    const criticalFns = ['getAllTransactions','getSummary','getAdmins','getActiveSessions','getExternalSources','addTransaction','updateTransaction','deleteTransaction','uploadSlip'];
+    if (criticalFns.includes(fn)) {
+      return { success:false, error:'ເຊື່ອມຕໍ່ຊ້າ ຫລື ຂາດເນັດ - ກະລຸນາລອງໃໝ່' };
+    }
     return demoFallback(fn, args);
   }
 }
@@ -1066,8 +1072,8 @@ function startRealtimeSync() {
 // ============================================================
 function startSessionWatcher() {
   if(STATE.sessionPollInterval) clearInterval(STATE.sessionPollInterval);
-  pollActiveSessions(); // ດຶງຄັ້ງທຳອິດ ເພື່ອກຳນົດຄ່າເລີ່ມຕົ້ນ (ບໍ່ແຈ້ງເຕືອນ)
-  STATE.sessionPollInterval = setInterval(pollActiveSessions, 20000);
+  pollActiveSessions(); // ✅ ດຶງຄັ້ງດຽວຕອນເປີດແອັບ ບໍ່ອັບເດດອັດຕະໂນມັດອີກ
+  // ❌ ປິດ setInterval ທຸກ 20 ວິນາທີ (ປ່ຽນເປັນປຸ່ມກົດແທນ)
 }
 
 async function pollActiveSessions() {
@@ -1551,7 +1557,7 @@ function renderYearly(el) {
     </div>
     <div class="table-wrap">
       <div class="table-head"><div style="font-weight:700;font-size:13px;">ສະຫລຸບ ປີ ${STATE.selectedYear} · ${STATE.displayCurrency}</div></div>
-      <div class="table-scroll"><table>
+      <div class="table-scroll yearly-scroll"><table>
         <thead><tr><th>ເດືອນ</th><th>ລາຍຮັບ</th><th>ລາຍຈ່າຍ</th><th>ຍອດ</th><th>ຈຳນວນ</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
