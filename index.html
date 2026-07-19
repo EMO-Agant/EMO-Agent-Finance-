@@ -322,6 +322,28 @@ tbody td{padding:10px 10px;font-size:12px;color:var(--text2);}
 .cur-info-bar span{display:flex;align-items:center;gap:3px;}
 .cur-info-bar b{color:var(--text2);}
 
+/* CATEGORY BREAKDOWN DASHBOARD */
+.cat-dash{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.cat-dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+.cat-dash-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.cat-dash-total{font-size:11px;color:var(--text3);}
+.cat-bar-row{margin-bottom:12px;}
+.cat-bar-row:last-child{margin-bottom:0;}
+.cat-bar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;}
+.cat-bar-name{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;}
+.cat-bar-name .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.cat-bar-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cat-bar-vals{display:flex;align-items:baseline;gap:6px;flex-shrink:0;}
+.cat-bar-amt{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;}
+.cat-bar-pct{font-size:10px;color:var(--text3);min-width:30px;text-align:right;}
+.cat-bar-track{height:8px;background:var(--bg3);border-radius:6px;overflow:hidden;}
+.cat-bar-fill{height:100%;border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.cat-dash-empty{text-align:center;padding:20px;color:var(--text3);font-size:12px;}
+.cat-dash-tabs{display:flex;gap:6px;margin-bottom:14px;}
+.cat-dash-tab{flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;touch-action:manipulation;}
+.cat-dash-tab.active.expense{background:rgba(255,101,132,.15);color:var(--expense);border-color:var(--expense);}
+.cat-dash-tab.active.income{background:rgba(67,233,123,.15);color:var(--income);border-color:var(--income);}
+
 .date-range-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;width:100%;}
 .date-range-row label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;flex-shrink:0;}
 .date-range-row input[type=date]{padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:all .2s;cursor:pointer;-webkit-appearance:none;min-height:38px;flex:1;min-width:120px;}
@@ -1391,10 +1413,78 @@ function renderTxTable(data, mini=false) {
 }
 
 // ============================================================
+// CATEGORY BREAKDOWN DASHBOARD
+// ============================================================
+const CAT_COLORS = ['#6C63FF','#FF6584','#43E97B','#38BDF8','#FA8231','#F7B731','#A55EEA','#26DE81','#FD79A8','#00B894','#E17055','#0984E3'];
+
+function buildCategoryBreakdown(data, type) {
+  const filtered = data.filter(r=>r.Type===type);
+  const map = {};
+  filtered.forEach(r=>{
+    const cat = r.Category || 'ອື່ນໆ';
+    map[cat] = (map[cat]||0) + (r.AmountLAK||0);
+  });
+  const total = Object.values(map).reduce((s,v)=>s+v,0);
+  return Object.entries(map)
+    .map(([cat,amt])=>({cat, amt, pct: total ? (amt/total*100) : 0}))
+    .sort((a,b)=>b.amt-a.amt);
+}
+
+function catBarsHtml(items) {
+  if(!items.length) return `<div class="cat-dash-empty"><i class="fas fa-inbox"></i><br>ບໍ່ມີຂໍ້ມູນ</div>`;
+  return items.map((it,i)=>{
+    const color = CAT_COLORS[i % CAT_COLORS.length];
+    return `<div class="cat-bar-row">
+      <div class="cat-bar-top">
+        <div class="cat-bar-name"><span class="dot" style="background:${color}"></span><span>${it.cat}</span></div>
+        <div class="cat-bar-vals"><span class="cat-bar-amt">${fmtCur(it.amt)}</span><span class="cat-bar-pct">${it.pct.toFixed(0)}%</span></div>
+      </div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${it.pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCategoryDashboard(yearData, typeFilter) {
+  if (typeFilter === 'income') {
+    const items = buildCategoryBreakdown(yearData,'income');
+    return `<div class="cat-dash">
+      <div class="cat-dash-header"><div class="cat-dash-title"><i class="fas fa-chart-pie" style="color:var(--income)"></i> ລາຍຮັບຕາມໝວດໝູ່</div><div class="cat-dash-total">${items.length} ໝວດ</div></div>
+      ${catBarsHtml(items)}
+    </div>`;
+  }
+  if (typeFilter === 'expense') {
+    const items = buildCategoryBreakdown(yearData,'expense');
+    return `<div class="cat-dash">
+      <div class="cat-dash-header"><div class="cat-dash-title"><i class="fas fa-chart-pie" style="color:var(--expense)"></i> ລາຍຈ່າຍຕາມໝວດໝູ່</div><div class="cat-dash-total">${items.length} ໝວດ</div></div>
+      ${catBarsHtml(items)}
+    </div>`;
+  }
+  const expItems = buildCategoryBreakdown(yearData,'expense');
+  return `<div class="cat-dash">
+    <div class="cat-dash-header"><div class="cat-dash-title"><i class="fas fa-chart-pie" style="color:var(--primary)"></i> ວິເຄາະຕາມໝວດໝູ່</div></div>
+    <div class="cat-dash-tabs">
+      <button class="cat-dash-tab expense active" id="catTabExpense" onclick="switchCatTab('expense')"><i class="fas fa-arrow-up"></i> ລາຍຈ່າຍ</button>
+      <button class="cat-dash-tab income" id="catTabIncome" onclick="switchCatTab('income')"><i class="fas fa-arrow-down"></i> ລາຍຮັບ</button>
+    </div>
+    <div id="catDashBody">${catBarsHtml(expItems)}</div>
+  </div>`;
+}
+
+function switchCatTab(type) {
+  const yearData = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  const items = buildCategoryBreakdown(yearData, type);
+  document.getElementById('catDashBody').innerHTML = catBarsHtml(items);
+  document.getElementById('catTabExpense').classList.toggle('active', type==='expense');
+  document.getElementById('catTabIncome').classList.toggle('active', type==='income');
+}
+
+
+// ============================================================
 // TRANSACTIONS PAGE
 // ============================================================
 function renderTransactions(el, typeFilter) {
-  let data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  const yearData = STATE.allTx.filter(r=>r.Year===STATE.selectedYear); // ✅ ຂໍ້ມູນທັງປີ ສຳລັບ Dashboard ຕາມໝວດ
+  let data = yearData;
   if(typeFilter) data = data.filter(r=>r.Type===typeFilter);
   data = data.slice().sort((a,b) => new Date(b.Date) - new Date(a.Date) || String(b.ID).localeCompare(String(a.ID)));
   const ti = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
@@ -1414,6 +1504,7 @@ function renderTransactions(el, typeFilter) {
       <button class="btn btn-primary btn-sm" onclick="openAddModal('${typeFilter||''}')"><i class="fas fa-plus"></i></button>
     </div>
     ${curInfoBarHtml()}
+    ${renderCategoryDashboard(yearData, typeFilter)}
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
       <span style="font-size:13px;color:var(--income);font-weight:700;">${fmtCur(ti,'+')}</span>
       <span style="font-size:13px;color:var(--expense);font-weight:700;">${fmtCur(te,'-')}</span>
@@ -1502,7 +1593,8 @@ function selectMonthReport(m) {
   document.getElementById('monthlyContent').innerHTML=renderMonthContent(m);
 }
 function renderMonthContent(m) {
-  const data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m);
+  const data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m)
+    .slice().sort((a,b) => new Date(b.Date) - new Date(a.Date) || String(b.ID).localeCompare(String(a.ID))); // ✅ ຮຽງລາຍການລ່າສຸດຂຶ້ນເທິງ
   const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
   const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
   const net = inc-exp;
