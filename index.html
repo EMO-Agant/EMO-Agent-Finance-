@@ -2104,7 +2104,28 @@ document.addEventListener('touchend',e=>{
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('service-worker.js').then(reg => {
+      // ✅ ກວດຫາເວີຊັນໃໝ່ທຸກຄັ້ງທີ່ເປີດແອັບ
+      reg.update();
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // ມີເວີຊັນໃໝ່ → ບອກໃຫ້ Service Worker ໃໝ່ເຮັດວຽກທັນທີ
+            newSW.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    }).catch(()=>{});
+  });
+
+  // ✅ ເມື่ือ Service Worker ໃໝ່ຄວບຄຸມແອັບແລ້ວ ໃຫ້ Reload ໜ້າອັດຕະໂນມັດ 1 ຄັ້ງ
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
   });
 }
 </script>
