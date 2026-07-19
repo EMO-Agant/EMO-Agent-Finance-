@@ -1,48 +1,41 @@
-const CACHE_NAME = 'emo-finance-v2';
-const APP_SHELL = [
+// ✅ ປ່ຽນເລກນີ້ (v1, v2, v3...) ທຸກຄັ້ງທີ່ Deploy ເວີຊັນໃໝ່
+const CACHE_NAME = 'emo-finance-v3';
+
+const urlsToCache = [
   './',
   './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './manifest.json'
 ];
 
-self.addEventListener('install', (event) => {
+// ຕິດຕັ້ງ Service Worker + ເກັບໄຟລ໌ພື້ນຖານ
+self.addEventListener('install', event => {
+  self.skipWaiting(); // ✅ ໃຫ້ SW ໃໝ່ພ້ອມເຮັດວຽກທັນທີ ບໍ່ຕ້ອງລໍ tab ເກົ່າປິດ
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
-  self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+// ✅ ລຶບ Cache ເກົ່າທັງໝົດອອກ ເມື່ອມີເວີຊັນໃໝ່
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Network-first for the GAS API and everything cross-origin, cache-first for the app shell
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  const sameOrigin = url.origin === self.location.origin;
-
-  if (!sameOrigin) {
-    // Don't intercept calls to Google Apps Script / CDNs — always go to network
-    return;
+// ຮັບຄຳສັ່ງ SKIP_WAITING ຈາກໜ້າເວັບ
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
+});
 
+// Network-first ສຳລັບ HTML (ໃຫ້ພະຍາຍາມດຶງໄຟລ໌ໃໝ່ຈາກເນັດກ່ອນສະເໝີ)
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        }).catch(() => cached)
-      );
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
