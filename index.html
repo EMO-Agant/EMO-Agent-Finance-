@@ -2047,12 +2047,14 @@ async function saveExtSource() {
 // ============================================================
 // SETTINGS
 // ============================================================
-async function renderSettings(el) {
-  el.innerHTML = `<div class="loading"><div class="spinner"></div><span>ກຳລັງໂຫລດ...</span></div>`; // ✅ ເພີ່ມແຖວນີ້
+function renderSettings(el) {
   const s = STATE.settings;
-  const [adminRes,sessRes] = await Promise.all([gasCall('getAdmins'),gasCall('getActiveSessions')]);
-  STATE.admins=adminRes.data||[]; STATE.activeSessions=sessRes.data||[];
-  const adminRows = STATE.admins.map(a=>`
+  el.innerHTML = buildSettingsHtml(s);
+  loadSettingsExtras(); // ✅ ໂຫລດ Admins/Sessions ແບບ background ບໍ່ບລັອກໜ້າຈໍ
+}
+
+function renderAdminRows() {
+  const rows = (STATE.admins||[]).map(a=>`
     <tr><td><strong>${a.username}</strong></td><td>${a.displayName||'-'}</td>
       <td><span class="badge ${a.role==='admin'?'badge-income':'badge-expense'}">${a.role}</span></td>
       <td>${String(a.active).toLowerCase()==='true'?'<span style="color:var(--income)">● Active</span>':'<span style="color:var(--text3)">● Inactive</span>'}</td>
@@ -2060,11 +2062,28 @@ async function renderSettings(el) {
         <button class="btn btn-sm btn-outline" onclick="openEditAdmin('${a.username}')"><i class="fas fa-edit"></i></button>
         ${a.username!=='admin'?`<button class="btn btn-sm btn-danger" onclick="doDeleteAdmin('${a.username}')"><i class="fas fa-trash"></i></button>`:''}
       </div></td></tr>`).join('');
+  return rows || '<tr><td colspan="5" style="text-align:center;color:var(--text3);">ບໍ່ມີ</td></tr>';
+}
 
+async function loadSettingsExtras() {
+  const tbody = document.getElementById('adminTableBody');
+  if(tbody && !STATE.admins.length) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;"><div class="spinner" style="width:20px;height:20px;margin:0 auto;"></div></td></tr>`;
+  const [adminRes,sessRes] = await Promise.all([gasCall('getAdmins'),gasCall('getActiveSessions')]);
+  STATE.admins = adminRes.data||[]; STATE.activeSessions = sessRes.data||[];
+  const tb = document.getElementById('adminTableBody');
+  if(tb) tb.innerHTML = renderAdminRows();
+  const box = document.getElementById('activeSessionsBox');
+  if(box) box.innerHTML = renderActiveSessionsHtml();
+  const cnt = document.getElementById('activeSessionsCount');
+  if(cnt) cnt.textContent = STATE.activeSessions.length;
+}
+
+function buildSettingsHtml(s) {
+  const adminRows = renderAdminRows();
   const activePreset = s.themePreset||'aurora';
   const activeFontId = s.fontId||'sora-inter';
 
-  el.innerHTML=`<div class="page">
+  return `<div class="page">
 
     <!-- 🎨 THEME STUDIO -->
     <div class="settings-section">
@@ -2140,12 +2159,12 @@ async function renderSettings(el) {
       </div>
       <div class="table-scroll"><table>
         <thead><tr><th>Username</th><th>ຊື່</th><th>ສິດ</th><th>ສະຖານະ</th><th>ຈັດການ</th></tr></thead>
-        <tbody>${adminRows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);">ບໍ່ມີ</td></tr>'}</tbody>
+        <tbody id="adminTableBody">${adminRows}</tbody>
       </table></div>
     </div>
     <div class="settings-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div class="settings-section-title" style="margin:0;"><i class="fas fa-user-clock"></i> ຜູ້ທີ່ກຳລັງໃຊ້ງານຢູ່ (${STATE.activeSessions.length})</div>
+        <div class="settings-section-title" style="margin:0;"><i class="fas fa-user-clock"></i> ຜູ້ທີ່ກຳລັງໃຊ້ງານຢູ່ (<span id="activeSessionsCount">${STATE.activeSessions.length}</span>)</div>
         <button class="icon-btn btn-sm" onclick="pollActiveSessions()"><i class="fas fa-sync-alt"></i></button>
       </div>
       <div id="activeSessionsBox">${renderActiveSessionsHtml()}</div>
