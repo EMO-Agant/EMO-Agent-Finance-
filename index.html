@@ -1021,6 +1021,7 @@ const STATE = {
   externalSources:[], admins:[], activeSessions:[],
   lastTxCount:0, realtimeInterval:null, sessionPollInterval:null,
   knownSessionTokens:new Set(), sessionsInitialized:false,
+  knownTxSignatures:new Set(), txWatcherInitialized:false, txPollInterval:null,
   displayCurrency:'LAK',
   dashDateFrom:'', dashDateTo:'', selectedDashMonth:''
 };
@@ -1270,11 +1271,13 @@ async function initApp() {
     setSyncStatus('ok','ເຊື່ອມຕໍ່');
     // startRealtimeSync(); // ❌ ປິດການອັບເດດອັດຕະໂນມັດທຸກ 15 ວິນາທີ (ປ່ຽນເປັນປຸ່ມກົດເອງແທນ)
     startSessionWatcher();
+    startTxWatcher();
   } catch(e) {
     setSyncStatus('error','ຜິດພາດ');
     await loadAllData();
     refreshCurrentPage();
     startSessionWatcher();
+    startTxWatcher();
   }
 }
 
@@ -1350,6 +1353,53 @@ async function pollActiveSessions() {
     // ✅ ຖ້າກຳລັງເປີດໜ້າຕັ້ງຄ່າຢູ່ ໃຫ້ອັບເດດລາຍຊື່ຜູ້ໃຊ້ງານແບບ realtime
     const box = document.getElementById('activeSessionsBox');
     if(box) box.innerHTML = renderActiveSessionsHtml();
+  } catch(e){}
+}
+
+// ============================================================
+// 🔔 TX WATCHER — ກວດຫາລາຍການໃໝ່/ຖືກແກ້ໄຂໂດຍຄົນອື່ນ ແລ້ວແຈ້ງເຕືອນ
+// ============================================================
+function startTxWatcher() {
+  if(STATE.txPollInterval) clearInterval(STATE.txPollInterval);
+  STATE.txPollInterval = setInterval(pollTxChanges, 20000); // ທຸກ 20 ວິນາທີ
+}
+
+async function pollTxChanges() {
+  try {
+    const res = await gasCall('getAllTransactions');
+    if(!res.success) return;
+    const data = res.data||[];
+    const newSigs = new Set(data.map(r=>r.ID+'|'+r.UpdatedAt));
+
+    if(STATE.txWatcherInitialized) {
+      let changed = false;
+      data.forEach(r=>{
+        const sig = r.ID+'|'+r.UpdatedAt;
+        if(!STATE.knownTxSignatures.has(sig)) {
+          changed = true;
+          const actor = r.UpdatedBy || r.CreatedBy || 'ບໍ່ຮູ້ຈັກ';
+          if(actor !== STATE.currentUser) { // ບໍ່ແຈ້ງເຕືອນຕົວເອງ
+            const isNew = r.CreatedAt === r.UpdatedAt;
+            const actionTxt = isNew ? 'ເພີ່ມ' : 'ແກ້ໄຂ';
+            const typeTxt = r.Type==='income' ? 'ລາຍຮັບ' : 'ລາຍຈ່າຍ';
+            playLoginSound();
+            showToast(`🔔 "${actor}" ${actionTxt}ລາຍການ${typeTxt}: ${r.Description||'-'}`,'info');
+            try {
+              if('Notification' in window && Notification.permission==='granted') {
+                new Notification('EMO Finance - ມີການອັບເດດ', { body: `${actor} ${actionTxt}: ${r.Description||'-'}` });
+              }
+            } catch(e){}
+          }
+        }
+      });
+      if(changed) {
+        STATE.allTx = data.map(r=>({...r,Amount:parseFloat(r.Amount)||0,AmountLAK:parseFloat(r.AmountLAK)||0,Month:parseInt(r.Month)||0,Year:parseInt(r.Year)||0,PhotoURL:r.PhotoURL||''}));
+        STATE.lastTxCount = STATE.allTx.length;
+        refreshCurrentPage();
+      }
+    }
+    STATE.knownTxSignatures = newSigs;
+    STATE.txWatcherInitialized = true;
   } catch(e){}
 }
 
@@ -2339,7 +2389,7 @@ document.getElementById('txAmount').addEventListener('input',updateLAKPreview);
 document.getElementById('txExRate').addEventListener('input',updateLAKPreview);
 
 async function saveTx(keepOpen) {
-  const d = { date:document.getElementById('txDate').value, type:STATE.currentType, category:document.getElementById('txCategory').value, description:document.getElementById('txDesc').value, amount:document.getElementById('txAmount').value, currency:document.getElementById('txCurrency').value, exchangeRate:document.getElementById('txExRate').value||'1', note:document.getElementById('txNote').value, photoUrl:document.getElementById('txPhotoUrl').value||'' };
+  const d = { date:document.getElementById('txDate').value, type:STATE.currentType, category:document.getElementById('txCategory').value, description:document.getElementById('txDesc').value, amount:document.getElementById('txAmount').value, currency:document.getElementById('txCurrency').value, exchangeRate:document.getElementById('txExRate').value||'1', note:document.getElementById('txNote').value, photoUrl:document.getElementById('txPhotoUrl').value||'', username: STATE.currentUser||'' };
   if(!d.date||!d.amount||parseFloat(d.amount)<=0){showToast('ໃສ່ຂໍ້ມູນໃຫ້ຄົບ','error');return;}
   const btn = document.getElementById(keepOpen?'saveAddTxBtn':'saveTxBtn');
   const originalHtml = btn.innerHTML;
