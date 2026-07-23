@@ -419,7 +419,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .exp-donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
 .exp-donut-total{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--text);}
 .exp-donut-sub{font-size:10px;color:var(--text3);margin-top:2px;}
-.exp-legend{flex:1;min-width:160px;display:flex;flex-direction:column;gap:10px;}
+.exp-legend{flex:1;min-width:160px;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
 .exp-legend-item{display:flex;align-items:center;gap:9px;}
 .exp-legend-dot{width:8px;height:26px;border-radius:4px;flex-shrink:0;}
 .exp-legend-text{min-width:0;}
@@ -428,7 +428,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .exp-analytics-empty{text-align:center;padding:20px;color:var(--text3);font-size:12px;}
 @media (max-width:420px){
   .exp-analytics-body{flex-direction:column;}
-  .exp-legend{width:100%;}
+  .exp-legend{width:100%;grid-template-columns:1fr 1fr;}
 }
 
 /* Toast */
@@ -473,6 +473,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .modal-body{padding:12px 14px;}
   .modal-header{padding:10px 14px 0;}
   .source-embed{height:200px;}
+  #themeBtn{display:none;}  /* ✅ ເພີ່ມແຖວນີ້ — ເອົາປຸ່ມ Light/Dark ອອກຈາກ topbar ໃນມືຖື */
 }
 @media (min-width:768px){
   :root{--topbar-h:64px;}
