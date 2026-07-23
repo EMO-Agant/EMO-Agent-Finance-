@@ -9,7 +9,7 @@
 <title>EMO Finance System</title>
 
 <meta name="apple-mobile-web-app-title" content="EMO Finance">
-<meta name="theme-color" content="#7C6AEF">
+<meta name="theme-color" content="#ffffff">
 <meta name="description" content="ລະບົບບໍລິຫານລາຍຮັບ-ລາຍຈ່າຍ EMO Agency">
 
 <link rel="manifest" href="manifest.json">
@@ -683,7 +683,8 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <div class="form-group-modal"><label>ໝາຍເຫດ</label><textarea id="txNote" placeholder="ໝາຍເຫດ..."></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="saveTx()" id="saveTxBtn"><i class="fas fa-save"></i> ບັນທຶກ</button>
+      <button class="btn btn-primary" onclick="saveTx(false)" id="saveTxBtn"><i class="fas fa-save"></i> ບັນທຶກ</button>
+      <button class="btn btn-success" onclick="saveTx(true)" id="saveAddTxBtn"><i class="fas fa-plus"></i> ບັນທຶກ & ເພີ່ມໃໝ່</button>
       <button class="btn btn-outline" onclick="closeModal()">ຍົກເລີກ</button>
     </div>
   </div>
@@ -1013,6 +1014,7 @@ const STATE = {
 // SLIP UPLOAD STATE (ໃນໜ້າຟອມເພີ່ມ/ແກ້ໄຂລາຍການ)
 // ============================================================
 let slipBase64 = null, slipFileName = null, slipMimeType = null;
+let lastUploadedSlipBase64 = null, lastUploadedSlipUrl = null; // ✅ Cache ກັນອັບໂຫລດຊ້ຳ
 
 function previewSlip(input) {
   const file = input.files[0]; if(!file) return;
@@ -1036,6 +1038,7 @@ function previewSlip(input) {
         ctx.drawImage(img, 0, 0, w, h);
         slipMimeType = 'image/jpeg';
         slipBase64 = canvas.toDataURL('image/jpeg', 0.75);
+        lastUploadedSlipBase64 = null; lastUploadedSlipUrl = null; // ✅ ຮູບໃໝ່ ຕ້ອງອັບໂຫລດໃໝ່
       } catch (compressErr) {
         // ✅ ຖ້າບີບອັດບໍ່ໄດ້ (ເຊັ່ນ canvas error) ໃຫ້ໃຊ້ຮູບຕົ້ນສະບັບແທນ
         slipMimeType = file.type || 'image/jpeg';
@@ -1058,6 +1061,7 @@ function previewSlip(input) {
 }
 function removeSlip() {
   slipBase64 = null; slipFileName = null; slipMimeType = null;
+  lastUploadedSlipBase64 = null; lastUploadedSlipUrl = null; // ✅ ລຶບ cache ນຳ
   document.getElementById('txSlipFile').value = '';
   document.getElementById('txPhotoUrl').value = '';
   document.getElementById('slipPreviewWrap').style.display = 'none';
@@ -1683,8 +1687,8 @@ function renderCategoryDashboard(yearData, typeFilter) {
 }
 
 function switchCatTab(type) {
-  const yearData = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
-  const items = buildCategoryBreakdown(yearData, type);
+  const base = STATE.txFilterBase || STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  const items = buildCategoryBreakdown(base, type);
   document.getElementById('catDashBody').innerHTML = catBarsHtml(items);
   document.getElementById('catTabExpense').classList.toggle('active', type==='expense');
   document.getElementById('catTabIncome').classList.toggle('active', type==='income');
@@ -1783,8 +1787,8 @@ function renderTransactions(el, typeFilter) {
       <button class="btn btn-primary btn-sm" onclick="openAddModal('${typeFilter||''}')"><i class="fas fa-plus"></i></button>
     </div>
     ${curInfoBarHtml()}
-    ${renderExpensesAnalyticsCard(yearData, typeFilter)}
-    ${renderCategoryDashboard(yearData, typeFilter)}
+    <div id="expAnalyticsWrap">${renderExpensesAnalyticsCard(yearData, typeFilter)}</div>
+    <div id="catDashWrap">${renderCategoryDashboard(yearData, typeFilter)}</div>
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
       <span style="font-size:13px;color:var(--income);font-weight:700;">${fmtCur(ti,'+')}</span>
       <span style="font-size:13px;color:var(--expense);font-weight:700;">${fmtCur(te,'-')}</span>
@@ -1795,21 +1799,34 @@ function renderTransactions(el, typeFilter) {
       <div class="table-scroll" id="txTableBody">${renderTxTable(data)}</div>
     </div>
   </div>`;
-  setTimeout(()=>{ drawExpAnalyticsChart(yearData, typeFilter); }, 80); 
+  setTimeout(()=>{ drawExpAnalyticsChart(yearData, typeFilter); }, 80);
+  STATE.txFilterBase = yearData; // ✅ ເກັບຄ່າຖານໄວ້ໃຫ້ switchCatTab ໃຊ້
 }
 
 function applyTxFilter() {
   const month  = document.getElementById('filterMonth')?.value;
   const search = (document.getElementById('filterSearch')?.value||'').toLowerCase();
-  let data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
-  if(STATE.page==='income')  data=data.filter(r=>r.Type==='income');
-  if(STATE.page==='expense') data=data.filter(r=>r.Type==='expense');
-  if(month)  data=data.filter(r=>r.Month===parseInt(month));
+  const typeFilter = STATE.page==='income'?'income':STATE.page==='expense'?'expense':null;
+
+  let base = STATE.allTx.filter(r=>r.Year===STATE.selectedYear);
+  if(typeFilter) base = base.filter(r=>r.Type===typeFilter);
+  if(month) base = base.filter(r=>r.Month===parseInt(month));
+  STATE.txFilterBase = base; // ✅ ຄ່າຖານຕາມເດືອນທີ່ເລືອກ (ໃຊ້ກັບ analytics)
+
+  let data = base;
   if(search) data=data.filter(r=>(r.Description||'').toLowerCase().includes(search)||(r.Category||'').toLowerCase().includes(search));
   data = data.slice().sort((a,b) => new Date(b.Date) - new Date(a.Date) || String(b.ID).localeCompare(String(a.ID)));
+
   const ml=document.getElementById('txMobileList'), tl=document.getElementById('txTableBody');
   if(ml) ml.innerHTML=renderTxCards(data);
   if(tl) tl.innerHTML=renderTxTable(data);
+
+  // ✅ ອັບເດດ Expenses analytics ແລະ ວິເຄາະຕາມໝວດໝູ່ ໃຫ້ຕົງກັບເດືອນທີ່ເລືອກ
+  const expWrap = document.getElementById('expAnalyticsWrap');
+  if(expWrap) expWrap.innerHTML = renderExpensesAnalyticsCard(base, typeFilter);
+  const catWrap = document.getElementById('catDashWrap');
+  if(catWrap) catWrap.innerHTML = renderCategoryDashboard(base, typeFilter);
+  setTimeout(()=>drawExpAnalyticsChart(base, typeFilter), 60);
 }
 
 // ============================================================
@@ -1833,6 +1850,7 @@ function loadDailyReport() {
   const data = STATE.allTx.filter(r=>{ if(r.Year!==parseInt(y)||r.Month!==parseInt(m)) return false; return new Date(r.Date).getDate()===parseInt(d); });
   const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
   const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
+  STATE.txFilterBase = data; // ✅ ໃຫ້ switchCatTab ໃຊ້ຂໍ້ມູນຂອງວັນນີ້
   document.getElementById('dailyResult').innerHTML=`
     <div class="stat-grid" style="margin-bottom:12px;">
       <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
@@ -1845,10 +1863,13 @@ function loadDailyReport() {
         <div class="stat-value" style="color:${inc-exp>=0?'var(--income)':'var(--expense)'}">
           ${fmtCur(Math.abs(inc-exp),inc-exp>=0?'+':'-')}</div></div>
     </div>
+    <div id="dailyExpWrap">${renderExpensesAnalyticsCard(data, null)}</div>
+    <div id="dailyCatWrap">${renderCategoryDashboard(data, null)}</div>
     <div class="table-wrap">
       <div class="table-head"><div style="font-weight:700;font-size:13px;">ວັນທີ ${date}</div></div>
       ${renderTxCards(data)}<div class="table-scroll">${renderTxTable(data)}</div>
     </div>`;
+    setTimeout(()=>drawExpAnalyticsChart(data, null), 60);
 }
 
 // ============================================================
@@ -1867,11 +1888,12 @@ function renderMonthly(el) {
     <div id="monthlyContent">${renderMonthContent(STATE.selectedMonth)}</div>
   </div>`;
   setTimeout(()=>{ const a=document.querySelector('.month-tab.active'); if(a) a.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); },100);
+  setTimeout(()=>drawExpAnalyticsChart(STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===STATE.selectedMonth), null), 60); // ✅ ແກ້ຮູບບໍ່ຂຶ້ນຄັ້ງທຳອິດ
 }
 function selectMonthReport(m) {
   STATE.selectedMonth=m;
   document.querySelectorAll('.month-tab').forEach((b,i)=>b.classList.toggle('active',i+1===m));
-  document.getElementById('monthlyContent').innerHTML=renderMonthContent(m);
+  document.getElementById('monthlyContent').innerHTML=renderMonthContent(m);setTimeout(()=>drawExpAnalyticsChart(STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m), null), 60);
 }
 function renderMonthContent(m) {
   const data = STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m)
@@ -1879,6 +1901,7 @@ function renderMonthContent(m) {
   const inc = data.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
   const exp = data.filter(r=>r.Type==='expense').reduce((s,r)=>s+(r.AmountLAK||0),0);
   const net = inc-exp;
+  STATE.txFilterBase = data; // ✅ ໃຫ້ switchCatTab ໃຊ້ຂໍ້ມູນຂອງເດືອນນີ້
   return `
     <div class="stat-grid" style="margin-bottom:12px;">
       <div class="stat-card income"><div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
@@ -1892,6 +1915,8 @@ function renderMonthContent(m) {
       <div class="stat-card count"><div class="stat-icon"><i class="fas fa-receipt"></i></div>
         <div class="stat-label">ຈຳນວນ</div><div class="stat-value" style="color:var(--accent3)">${data.length}</div></div>
     </div>
+    <div id="monthExpWrap">${renderExpensesAnalyticsCard(data, null)}</div>
+    <div id="monthCatWrap">${renderCategoryDashboard(data, null)}</div>
     <div class="table-wrap">
       <div class="table-head"><div style="font-weight:700;font-size:13px;">ເດືອນ${MONTH_NAMES[m]} ${STATE.selectedYear}</div>
         <button class="btn btn-primary btn-sm" onclick="openAddModal()"><i class="fas fa-plus"></i></button></div>
@@ -1904,6 +1929,7 @@ function renderMonthContent(m) {
 // ============================================================
 function renderYearly(el) {
   const s = STATE.summary;
+  STATE.txFilterBase = STATE.allTx.filter(r=>r.Year===STATE.selectedYear); // ✅ ໃຫ້ switchCatTab ໃຊ້ຂໍ້ມູນຂອງປີນີ້
   const rows = Array.from({length:12},(_,i)=>{
     const m=i+1, md=STATE.allTx.filter(r=>r.Year===STATE.selectedYear&&r.Month===m);
     const inc=md.filter(r=>r.Type==='income') .reduce((s,r)=>s+(r.AmountLAK||0),0);
@@ -1928,6 +1954,8 @@ function renderYearly(el) {
       <div class="stat-card count"><div class="stat-icon"><i class="fas fa-receipt"></i></div>
         <div class="stat-label">ທັງໝົດ</div><div class="stat-value" style="color:var(--accent3)">${s.count||0}</div></div>
     </div>
+    <div id="yearExpWrap">${renderExpensesAnalyticsCard(STATE.allTx.filter(r=>r.Year===STATE.selectedYear), null)}</div>
+    <div id="yearCatWrap">${renderCategoryDashboard(STATE.allTx.filter(r=>r.Year===STATE.selectedYear), null)}</div>
     <div class="table-wrap">
       <div class="table-head"><div style="font-weight:700;font-size:13px;">ສະຫລຸບ ປີ ${STATE.selectedYear} · ${STATE.displayCurrency}</div></div>
       <div class="table-scroll yearly-scroll"><table>
@@ -1936,6 +1964,7 @@ function renderYearly(el) {
       </table></div>
     </div>
   </div>`;
+  setTimeout(()=>drawExpAnalyticsChart(STATE.allTx.filter(r=>r.Year===STATE.selectedYear), null), 60);
 }
 
 // ============================================================
@@ -2274,27 +2303,47 @@ function updateLAKPreview() {
 document.getElementById('txAmount').addEventListener('input',updateLAKPreview);
 document.getElementById('txExRate').addEventListener('input',updateLAKPreview);
 
-async function saveTx() {
+async function saveTx(keepOpen) {
   const d = { date:document.getElementById('txDate').value, type:STATE.currentType, category:document.getElementById('txCategory').value, description:document.getElementById('txDesc').value, amount:document.getElementById('txAmount').value, currency:document.getElementById('txCurrency').value, exchangeRate:document.getElementById('txExRate').value||'1', note:document.getElementById('txNote').value, photoUrl:document.getElementById('txPhotoUrl').value||'' };
   if(!d.date||!d.amount||parseFloat(d.amount)<=0){showToast('ໃສ່ຂໍ້ມູນໃຫ້ຄົບ','error');return;}
-  const btn=document.getElementById('saveTxBtn');
+  const btn = document.getElementById(keepOpen?'saveAddTxBtn':'saveTxBtn');
+  const originalHtml = btn.innerHTML;
   btn.innerHTML='<div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div>'; btn.disabled=true;
   try {
-    // ✅ ຖ້າມີການເລືອກຮູບ Slip ໃໝ່ ໃຫ້ອັບໂຫລດຂຶ້ນ Google Drive ກ່ອນ ແລ້ວເອົາລິ້ງມາໃສ່ໃນ photoUrl
     if (slipBase64) {
-      showToast('ກຳລັງອັບໂຫລດ Slip...','info');
-      const upRes = await gasCallEx('uploadSlip', [slipBase64, slipFileName, slipMimeType], 55000);
-      if (upRes.success) {
-        d.photoUrl = upRes.url;
+      // ✅ ຖ້າຮູບດຽວກັນກັບທີ່ອັບໂຫລດໄປແລ້ວ (ຄ່າ base64 ຄືເກົ່າ) ບໍ່ຕ້ອງອັບໂຫລດຊ້ຳ
+      if (slipBase64 === lastUploadedSlipBase64 && lastUploadedSlipUrl) {
+        d.photoUrl = lastUploadedSlipUrl;
       } else {
-        showToast('ອັບໂຫລດ Slip ບໍ່ສຳເລັດ: '+upRes.error,'error');
+        showToast('ກຳລັງອັບໂຫລດ Slip...','info');
+        const upRes = await gasCallEx('uploadSlip', [slipBase64, slipFileName, slipMimeType], 55000);
+        if (upRes.success) {
+          d.photoUrl = upRes.url;
+          lastUploadedSlipBase64 = slipBase64;
+          lastUploadedSlipUrl = upRes.url;
+        } else {
+          showToast('ອັບໂຫລດ Slip ບໍ່ສຳເລັດ: '+upRes.error,'error');
+        }
       }
     }
     const r = STATE.editId ? await gasCall('updateTransaction',STATE.editId,d) : await gasCall('addTransaction',d);
-    if(r.success){ showToast(STATE.editId?'ແກ້ໄຂສຳເລັດ ✅':'ເພີ່ມສຳເລັດ ✅','success'); closeModal(); await loadAllData(); const yearRes=await gasCall('getAvailableYears'); if(yearRes.success) STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020); refreshCurrentPage(); }
-    else showToast('ຜິດພາດ: '+r.error,'error');
+    if(r.success){
+      showToast(STATE.editId?'ແກ້ໄຂສຳເລັດ ✅':'ເພີ່ມສຳເລັດ ✅','success');
+      await loadAllData();
+      const yearRes=await gasCall('getAvailableYears'); if(yearRes.success) STATE.availableYears=(yearRes.years||[]).filter(y=>y>=2020);
+      refreshCurrentPage();
+      if (keepOpen && !STATE.editId) {
+        // ✅ ບໍ່ປິດ Modal — ລ້າງແຕ່ຊ່ອງ ລາຍລະອຽດ/ຈຳນວນ/ໝາຍເຫດ ແລ້ວພ້ອມໃສ່ລາຍການຕໍ່ໄປ (ວັນທີ/ປະເພດ/ໝວດ/ສະກຸນ/Slip ຄືເກົ່າ)
+        document.getElementById('txDesc').value='';
+        document.getElementById('txAmount').value='';
+        document.getElementById('txNote').value='';
+        document.getElementById('txAmount').focus();
+      } else {
+        closeModal();
+      }
+    } else showToast('ຜິດພາດ: '+r.error,'error');
   } catch(e) { showToast('ຜິດພາດ: '+e,'error'); }
-  btn.innerHTML='<i class="fas fa-save"></i> ບັນທຶກ'; btn.disabled=false;
+  btn.innerHTML=originalHtml; btn.disabled=false;
 }
 function editTx(id) {
   const tx = STATE.allTx.find(r=>r.ID===id); if(!tx) return;
