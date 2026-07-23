@@ -939,6 +939,19 @@ function fmtCur(amtLAK, sign) {
   const sym = STATE.displayCurrency==='LAK'?'₭':STATE.displayCurrency==='THB'?'฿':'$';
   return (sign||'')+str+' '+sym;
 }
+// ✅ ສະແດງຈຳນວນຕາມສະກຸນ display; ຖ້າສະກຸນທີ່ເລືອກ = ສະກຸນຕົ້ນສະບັບຂອງລາຍການ
+// ໃຫ້ໃຊ້ Amount ຕົ້ນສະບັບກົງໆ (ບໍ່ຄິດຄືນຜ່ານ LAK) ເພື່ອບໍ່ໃຫ້ອັດຕາແລກປ່ຽນປັດຈຸບັນມາປ່ຽນຄ່າ
+function fmtCurTx(r, sign) {
+  if (r.Currency === STATE.displayCurrency) {
+    const abs = Math.abs(parseFloat(r.Amount) || 0);
+    let str = STATE.displayCurrency === 'LAK'
+      ? Math.round(abs).toLocaleString()
+      : abs.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    const sym = STATE.displayCurrency==='LAK'?'₭':STATE.displayCurrency==='THB'?'฿':'$';
+    return (sign||'')+str+' '+sym;
+  }
+  return fmtCur(r.AmountLAK||0, sign);
+}
 function setCurrency(cur) {
   STATE.displayCurrency = cur;
   ['LAK','THB','USD'].forEach(c => { const el=document.getElementById('cur'+c); if(el) el.classList.toggle('active',c===cur); });
@@ -1387,7 +1400,7 @@ function slipCellHtml(r) {
 function renderTxCards(data, mini=false) {
   if(!data||!data.length) return '';
   return `<div class="tx-card-list">${data.map(r=>{
-    const dispAmt = fmtCur(r.AmountLAK||0);
+    const dispAmt = fmtCurTx(r);
     return `<div class="tx-card">
       <div class="tx-card-icon ${r.Type}"><i class="fas fa-${r.Type==='income'?'arrow-down':'arrow-up'}"></i></div>
       <div class="tx-card-body">
@@ -1416,7 +1429,7 @@ function renderTxTable(data, mini=false) {
       ${mini?'':'<th>ໝາຍເຫດ</th><th>ຈັດການ</th>'}
     </tr></thead>
     <tbody>${data.map(r=>{
-      const dispAmt = fmtCur(r.AmountLAK||0);
+      const dispAmt = fmtCurTx(r);
       return `<tr>
         <td style="white-space:nowrap">${formatDate(r.Date)}</td><td>${r.Description||'-'}</td><td>${r.Category||'-'}</td>
         <td><span class="badge badge-${r.Type}">${r.Type==='income'?'↓ ລາຍຮັບ':'↑ ລາຍຈ່າຍ'}</span></td>
