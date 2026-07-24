@@ -851,6 +851,7 @@ const NAV_ITEMS = [
   { id:'monthly',       label:'ລາຍງານເດືອນ',      icon:'calendar-alt',  group:'ລາຍງານ', bottom:true  },
   { id:'yearly',        label:'ລາຍງານປີ',         icon:'chart-bar',     group:'ລາຍງານ', bottom:true  },
   { id:'source',        label:'Google Sheet',     icon:'table',         group:'ຈັດການ', bottom:false },
+  { id:'activitylog',   label:'ປະຫວັດການແກ້ໄຂ',    icon:'history',       group:'ຈັດການ', bottom:false },
   { id:'settings',      label:'ຕັ້ງຄ່າ',            icon:'cog',           group:'ຈັດການ', bottom:false },
 ];
 let _iconPickerTarget = null; // nav id currently being edited in the icon picker
@@ -1018,7 +1019,7 @@ const STATE = {
   editId:null, deleteId:null, editAdmin:null,
   selectedYear:new Date().getFullYear(), selectedMonth:null,
   currentType:'income', lightMode:false, charts:{},
-  externalSources:[], admins:[], activeSessions:[],
+  externalSources:[], admins:[], activeSessions:[], activityLogs:[],
   lastTxCount:0, realtimeInterval:null, sessionPollInterval:null,
   knownSessionTokens:new Set(), sessionsInitialized:false,
   knownTxSignatures:new Set(), txWatcherInitialized:false, txPollInterval:null,
@@ -1439,7 +1440,7 @@ function navigate(page) {
   document.querySelectorAll('.bnav-item').forEach(el => el.classList.toggle('active', el.dataset.page===page));
   document.getElementById('pageTitle').textContent = getNavLabel(page)||page;
   const content = document.getElementById('mainContent');
-  const renders = { dashboard:()=>renderDashboard(content), transactions:()=>renderTransactions(content,null), income:()=>renderTransactions(content,'income'), expense:()=>renderTransactions(content,'expense'), daily:()=>renderDaily(content), monthly:()=>renderMonthly(content), yearly:()=>renderYearly(content), source:()=>renderSource(content), settings:()=>renderSettings(content) };
+  const renders = { dashboard:()=>renderDashboard(content), transactions:()=>renderTransactions(content,null), income:()=>renderTransactions(content,'income'), expense:()=>renderTransactions(content,'expense'), daily:()=>renderDaily(content), monthly:()=>renderMonthly(content), yearly:()=>renderYearly(content), source:()=>renderSource(content), activitylog:()=>renderActivityLog(content), settings:()=>renderSettings(content) };
   (renders[page]||function(){})();
   closeSidebar();
   window.scrollTo(0,0);
@@ -2095,6 +2096,89 @@ async function saveExtSource() {
 }
 
 // ============================================================
+// ACTIVITY LOG PAGE
+// ============================================================
+const ACTION_LABELS = { add:'ໄດ້ເພີ່ມລາຍການ', update:'ໄດ້ແກ້ໄຂລາຍການ', delete:'ໄດ້ລຶບລາຍການ' };
+const ACTION_ICONS  = { add:'plus-circle', update:'edit', delete:'trash-alt' };
+const ACTION_COLORS = { add:'var(--income)', update:'var(--accent3)', delete:'var(--expense)' };
+const FIELD_LABELS  = {
+  date:'ວັນທີ', type:'ປະເພດ', category:'ໝວດໝູ່', description:'ຊື່/ລາຍລະອຽດ',
+  amount:'ຈຳນວນເງິນ', currency:'ສະກຸນເງິນ', exchangeRate:'ອັດຕາແລກປ່ຽນ',
+  note:'ໝາຍເຫດ', photoUrl:'ຮູບ Slip'
+};
+
+function fmtLogVal(field, val) {
+  if (field==='photoUrl') return val ? '📎 ມີຮູບ Slip' : 'ບໍ່ມີຮູບ';
+  if (field==='type') return val==='income' ? 'ລາຍຮັບ' : 'ລາຍຈ່າຍ';
+  if (field==='amount') return (parseFloat(val)||0).toLocaleString();
+  if (field==='date') return formatDate(val);
+  return (val===undefined||val===null||val==='') ? '(ຫວ່າງເປົ່າ)' : String(val);
+}
+
+async function renderActivityLog(el) {
+  el.innerHTML = `<div class="page"><div class="loading"><div class="spinner"></div><span>ກຳລັງໂຫລດ...</span></div></div>`;
+  const res = await gasCall('getActivityLogs', 300).catch(()=>({success:false}));
+  const logs = res.success ? (res.data||[]) : [];
+  STATE.activityLogs = logs;
+
+  el.innerHTML = `<div class="page">
+    <div class="filter-bar">
+      <input class="filter-input" type="text" id="logSearch" placeholder="ຄົ້ນຫາ ຊື່ຜູ້ໃຊ້ ຫລື ລາຍການ..." oninput="applyLogFilter()" style="flex:1;min-width:140px;">
+      <select class="filter-select" id="logActionFilter" onchange="applyLogFilter()">
+        <option value="">ທຸກປະເພດ</option>
+        <option value="add">ເພີ່ມ</option>
+        <option value="update">ແກ້ໄຂ</option>
+        <option value="delete">ລຶບ</option>
+      </select>
+      <button class="icon-btn" onclick="renderActivityLog(document.getElementById('mainContent'))"><i class="fas fa-sync-alt"></i></button>
+    </div>
+    <div class="table-wrap" id="logListWrap">${renderLogList(logs)}</div>
+  </div>`;
+}
+
+function applyLogFilter() {
+  const q   = (document.getElementById('logSearch').value||'').toLowerCase();
+  const act = document.getElementById('logActionFilter').value;
+  let data  = STATE.activityLogs||[];
+  if(act) data = data.filter(l=>l.action===act);
+  if(q) data = data.filter(l => (l.username||'').toLowerCase().includes(q) || (l.txDescription||'').toLowerCase().includes(q));
+  document.getElementById('logListWrap').innerHTML = renderLogList(data);
+}
+
+function renderLogList(logs) {
+  if(!logs.length) return `<div class="empty-state"><i class="fas fa-history"></i><p>ຍັງບໍ່ມີປະຫວັດການແກ້ໄຂ</p></div>`;
+  return logs.map(l => {
+    const changeKeys = Object.keys(l.changes||{});
+    const changeRows = changeKeys.map(f => {
+      const c = l.changes[f];
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12px;">
+        <span style="color:var(--text3);flex-shrink:0;">${FIELD_LABELS[f]||f}</span>
+        <span style="text-align:right;">
+          <span style="text-decoration:line-through;opacity:.55;">${fmtLogVal(f,c.old)}</span>
+          <i class="fas fa-arrow-right" style="margin:0 5px;font-size:9px;color:var(--text3);"></i>
+          <span style="color:var(--text);font-weight:700;">${fmtLogVal(f,c.new)}</span>
+        </span>
+      </div>`;
+    }).join('');
+    return `<div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:flex-start;gap:11px;">
+        <div style="width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, ${ACTION_COLORS[l.action]||'var(--primary)'} 16%, transparent);color:${ACTION_COLORS[l.action]||'var(--primary)'};">
+          <i class="fas fa-${ACTION_ICONS[l.action]||'circle'}"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;color:var(--text);">
+            <b style="color:var(--primary-light);">${l.username||'ບໍ່ຮູ້ຈັກ'}</b> ${ACTION_LABELS[l.action]||l.action}
+          </div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px;">${l.txDescription||'-'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;"><i class="fas fa-clock"></i> ${formatDateTime(l.timestamp)}</div>
+          ${changeRows ? `<div style="margin-top:8px;background:var(--bg3);border-radius:var(--radius-sm);padding:8px 10px;">${changeRows}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
 // SETTINGS
 // ============================================================
 function renderSettings(el) {
@@ -2450,7 +2534,7 @@ function editTx(id) {
 function deleteTx(id) { STATE.deleteId=id; document.getElementById('delModal').classList.add('open'); }
 async function confirmDelete() {
   if(!STATE.deleteId) return;
-  const r = await gasCall('deleteTransaction',STATE.deleteId).catch(e=>({success:false,error:String(e)}));
+  const r = await gasCall('deleteTransaction',STATE.deleteId,STATE.currentUser).catch(e=>({success:false,error:String(e)}));
   if(r.success){ showToast('ລຶບສຳເລັດ','success'); closeDelModal(); await loadAllData(); refreshCurrentPage(); }
   else showToast('ຜິດພາດ: '+r.error,'error');
 }
